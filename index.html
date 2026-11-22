@@ -1,0 +1,2686 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>خزنة الفلوس — 100,000,000 جنيه</title>
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<meta name="theme-color" content="#12171f">
+<style>
+  :root { --gold:#e9c46a; --panel:rgba(12,16,22,.78); --line:rgba(233,196,106,.35); }
+  * { box-sizing:border-box; }
+  html,body { margin:0; height:100%; overflow:hidden; background:#000; color:#f1f1f1;
+    font-family:"Segoe UI",Tahoma,system-ui,Arial,sans-serif; user-select:none; }
+  canvas#c { display:block; width:100vw; height:100vh; }
+
+  .panel { position:fixed; background:var(--panel); border:1px solid var(--line);
+    border-radius:10px; padding:12px 14px; backdrop-filter:blur(4px); }
+  #bag { top:14px; left:14px; min-width:250px; }
+  #bag h3, #vaultBox h3 { margin:0 0 8px; font-size:14px; color:var(--gold); }
+  table { border-collapse:collapse; width:100%; font-size:14px; font-variant-numeric:tabular-nums; }
+  th { font-weight:500; font-size:12px; color:#9aa4b1; text-align:left; padding:2px 12px 4px 0; }
+  td { padding:3px 12px 3px 0; text-align:left; }
+  td:first-child, th:first-child { text-align:right; padding-right:0; }
+  .chip { display:inline-block; width:10px; height:10px; border-radius:2px; margin-left:7px; }
+  .cap { margin-top:8px; font-size:12px; color:#9aa4b1; }
+  .cap b { color:#fff; font-weight:600; }
+
+  #vaultBox { top:14px; left:50%; transform:translateX(-50%); width:min(460px,44vw); text-align:center; }
+  #vaultAmt { font-size:22px; font-weight:700; font-variant-numeric:tabular-nums; }
+  #vaultAmt small { font-size:13px; font-weight:400; color:#9aa4b1; }
+  .bar { height:8px; background:rgba(255,255,255,.12); border-radius:4px; margin-top:8px; overflow:hidden; }
+  .bar > div { height:100%; width:0; background:linear-gradient(90deg,#c9a03d,#f4d98b); transition:width .2s; }
+
+  #side { top:14px; right:14px; text-align:right; font-size:13px; color:#c6ccd4; line-height:1.6; }
+  #timer { font-size:20px; font-weight:700; color:#fff; font-variant-numeric:tabular-nums; }
+
+  #objective { bottom:16px; left:14px; font-size:14px; max-width:420px; }
+  #objective span { color:var(--gold); font-size:13px; display:block; margin-bottom:3px; }
+
+  #prompt { position:fixed; bottom:20%; left:50%; transform:translateX(-50%); padding:10px 18px;
+    background:var(--panel); border:1px solid var(--gold); border-radius:8px; font-size:16px; display:none; white-space:nowrap; }
+  #prompt kbd { background:var(--gold); color:#111; border-radius:4px; padding:1px 8px; font-weight:700; font-family:inherit; margin-left:8px; }
+  #toast { position:fixed; top:22%; left:50%; transform:translateX(-50%); padding:10px 20px; border-radius:8px;
+    background:rgba(150,40,40,.88); font-size:16px; opacity:0; transition:opacity .25s; pointer-events:none; }
+  #toast.good { background:rgba(30,120,70,.9); }
+  #cross { position:fixed; left:50%; top:50%; width:6px; height:6px; margin:-3px 0 0 -3px; border-radius:50%;
+    background:rgba(255,255,255,.85); box-shadow:0 0 0 1px rgba(0,0,0,.5); }
+
+  .overlay { position:fixed; inset:0; display:flex; align-items:center; justify-content:center;
+    background:rgba(4,6,10,.82); z-index:10; }
+  .card { background:#12171f; border:1px solid var(--line); border-radius:14px; padding:24px 34px; max-width:600px; max-height:96vh; overflow:auto; text-align:center; }
+  .card h1 { margin:0 0 6px; font-size:30px; color:var(--gold); }
+  .card p { color:#c6ccd4; line-height:1.55; margin:8px 0; }
+  .card ol { text-align:right; color:#dfe3e8; line-height:1.6; padding-right:22px; padding-left:0; margin:10px 0; font-size:15px; }
+  .keys { display:grid; grid-template-columns:auto 1fr; gap:4px 14px; text-align:right; font-size:14px; color:#aeb6c1; margin:14px auto 0; width:fit-content; }
+  .keys b { color:#fff; }
+  .pw { margin-top:12px; padding-top:12px; border-top:1px solid var(--line); }
+  .pw label { display:block; color:var(--gold); font-size:14px; margin-bottom:8px; }
+  .pw input { direction:ltr; width:170px; text-align:center; font:700 28px Consolas,monospace; letter-spacing:.4em; text-indent:.4em;
+    padding:8px 0; border-radius:8px; border:1px solid #2f3a49; background:#05080b; color:#5dfc9a; outline:none; }
+  .pw input:focus { border-color:var(--gold); }
+  #pwErr { min-height:18px; margin-top:6px; font-size:13px; color:#ff7b7b; }
+  button.big { margin-top:10px; font:inherit; font-size:17px; font-weight:700; padding:12px 34px; border-radius:8px;
+    border:0; background:var(--gold); color:#151515; cursor:pointer; }
+  button.big:hover { filter:brightness(1.1); }
+
+  #keypad .card { padding:22px; width:290px; }
+  #kpDisplay { direction:ltr; background:#05080b; border:1px solid #2a3442; border-radius:8px; height:58px; line-height:58px;
+    font:700 30px Consolas,monospace; letter-spacing:.45em; text-indent:.45em; color:#5dfc9a; margin-bottom:14px; }
+  #kpDisplay.bad { color:#ff5a5a; border-color:#ff5a5a; }
+  #kpGrid { direction:ltr; display:grid; grid-template-columns:repeat(3,1fr); gap:8px; }
+  #kpGrid button { font:700 20px inherit; padding:14px 0; border-radius:8px; border:1px solid #2f3a49; background:#1c2430; color:#fff; cursor:pointer; }
+  #kpGrid button:hover { background:#273243; }
+  #kpGrid button.ok { background:#1f7a48; } #kpGrid button.clr { background:#7a2b2b; }
+  #kpHint { font-size:12px; color:#8b95a3; margin-top:12px; }
+  #chooser .card { width:440px; }
+  #chList { display:grid; gap:8px; margin-top:14px; }
+  #chList button { font:inherit; font-size:16px; text-align:right; padding:12px 14px; border-radius:8px; border:1px solid #2f3a49;
+    background:#1c2430; color:#fff; cursor:pointer; }
+  #chList button:hover:not(:disabled) { background:#273243; border-color:var(--gold); }
+  #chList button:disabled { opacity:.5; cursor:not-allowed; }
+  #chList small { color:#9aa4b1; font-size:13px; }
+  #chHint { font-size:12px; color:#8b95a3; margin-top:12px; }
+
+  #noteView .paper { background:#f7e58a; color:#2a2410; padding:34px 44px; border-radius:3px; transform:rotate(-2deg);
+    box-shadow:0 14px 40px rgba(0,0,0,.6); font-family:"Comic Sans MS","Segoe Print",cursive; text-align:center; }
+  #noteView .paper div { font-size:18px; }
+  #noteView .paper strong { display:block; font-size:54px; letter-spacing:.2em; margin:8px 0; }
+  #noteView .paper em { font-size:13px; opacity:.7; font-style:normal; }
+  #alert { position:fixed; top:138px; left:50%; transform:translateX(-50%); padding:8px 18px; border-radius:8px;
+    background:rgba(190,30,30,.92); font-size:16px; font-weight:700; display:none; animation:blink .7s infinite; z-index:5; white-space:nowrap; }
+  @keyframes blink { 50% { opacity:.45; } }
+  #redFlash { position:fixed; inset:0; pointer-events:none; box-shadow:inset 0 0 140px 40px rgba(255,0,0,.55); display:none; animation:blink .5s infinite; z-index:4; }
+  .diff { display:flex; gap:8px; justify-content:center; margin-top:8px; }
+  .diff button, button.small { font:inherit; font-size:14px; padding:8px 14px; border-radius:8px; border:1px solid #2f3a49; background:#1c2430; color:#fff; cursor:pointer; }
+  .diff button small { color:#9aa4b1; font-size:11px; }
+  .diff button.on { border-color:var(--gold); background:#3a3320; color:var(--gold); font-weight:700; }
+  #contBox { margin:12px 0 0; padding:12px; border:1px solid var(--gold); border-radius:10px; background:rgba(233,196,106,.08); color:#dfe3e8; }
+  #shop .card, #soundOv .card { width:580px; } #orderOffer .card { width:640px; max-width:96vw; }
+  #soundOv { z-index:20; }
+  .rows { display:grid; gap:8px; margin-top:12px; text-align:right; }
+  .rows .row { display:grid; grid-template-columns:1fr auto; gap:6px 12px; align-items:center; padding:10px 12px; border:1px solid #2f3a49; border-radius:8px; background:#1c2430; }
+  .rows .row small { color:#9aa4b1; font-size:13px; display:block; }
+  .rows .row button { font:inherit; font-size:14px; padding:7px 12px; border-radius:6px; border:0; background:var(--gold); color:#151515; font-weight:700; cursor:pointer; margin-right:4px; }
+  .rows .row button:disabled { background:#3a4250; color:#8b95a3; cursor:not-allowed; }
+  .rows .row button.plain { background:#2b3442; color:#fff; font-weight:400; }
+  #stageLine { font-size:12px; color:#9aa4b1; margin-top:6px; }
+  #storeOv { z-index:20; } #storeOv .card { width:580px; }
+  #recBox { margin-top:10px; font-size:13px; color:#c6ccd4; }
+  #vignette { position:fixed; inset:0; pointer-events:none; background:radial-gradient(ellipse at center, transparent 62%, rgba(0,0,0,.38) 100%); z-index:1; }
+  .panel, #prompt, #toast, #cross { z-index:2; }
+  canvas#c { touch-action:none; }
+  #touchUi { display:none; touch-action:none; }
+  body.touch #touchUi { display:block; }
+  #touchUi > * { position:fixed; z-index:6; touch-action:none; }
+  #stick { left:26px; bottom:26px; width:130px; height:130px; border-radius:50%; background:rgba(255,255,255,.10); border:2px solid rgba(255,255,255,.35); }
+  #knob { position:absolute; left:50%; top:50%; width:56px; height:56px; margin:-28px 0 0 -28px; border-radius:50%; background:rgba(233,196,106,.75); }
+  #touchUi button { border-radius:50%; border:2px solid rgba(255,255,255,.4); background:rgba(12,16,22,.6); color:#fff; font:700 16px inherit; }
+  #tPick { right:26px; bottom:30px; width:104px; height:104px; background:rgba(233,196,106,.55) !important; color:#111 !important; font-size:20px !important; }
+  #tUse { right:146px; bottom:30px; width:72px; height:72px; font-size:26px !important; }
+  #tRun { right:40px; bottom:150px; width:64px; height:64px; }
+  #tRun.on { background:rgba(93,252,154,.5) !important; color:#111 !important; }
+  #tPause { right:14px; top:46%; width:46px; height:46px; }
+  body.touch .panel { zoom:.68; }
+  body.touch #objective { left:50%; transform:translateX(-50%); bottom:8px; max-width:340px; }
+  body.touch #prompt { bottom:30%; font-size:14px; }
+  body.touch .card { zoom:.82; }
+  #orderOv .card { width:min(980px,96vw); max-width:none; padding:16px 22px; }
+  #ordReq { display:flex; flex-wrap:wrap; gap:6px; justify-content:center; margin:8px 0; }
+  #ordReq span { padding:5px 10px; border-radius:6px; background:#1c2430; border:1px solid #2f3a49; font-size:14px; }
+  #ordReq span.rdy { border-color:var(--gold); color:var(--gold); } #ordReq span.ok { border-color:#5dfc9a; color:#5dfc9a; }
+  #ordMsg { min-height:22px; font-size:14px; }
+  #ordPile { position:relative; height:270px; background:#0d2b1d; border:1px solid #1f5a3c; border-radius:10px; overflow:hidden; touch-action:none; direction:ltr; }
+  .onote { position:absolute; width:118px; height:52px; background-size:100% 100%; border-radius:3px; box-shadow:0 2px 5px rgba(0,0,0,.6); cursor:grab; touch-action:none; }
+  .oempty { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; color:#6f8f7d; }
+  #ordCount { display:flex; gap:26px; justify-content:center; align-items:center; height:270px; background:#0d2b1d; border:1px solid #1f5a3c; border-radius:10px; }
+  #ordStack, #ordDone { width:260px; height:114px; background-size:100% 100%; border-radius:5px; box-shadow:0 3px 0 #cfc8b4, 0 6px 0 #b9b29e, 0 9px 0 #a39c88, 0 12px 10px rgba(0,0,0,.6); }
+  #ordStack { cursor:pointer; touch-action:none; } #ordStack.empty, #ordDone.empty { background:#123523; box-shadow:none; border:2px dashed #2f6b4b; cursor:default; }
+  #ordStack.flip { animation:oflip .12s; } @keyframes oflip { 50% { transform:translateX(18px) rotate(4deg); } }
+  #ordDone { width:170px; height:75px; margin:8px auto 0; }
+  #ordCount small { display:block; color:#9ab5a5; font-size:13px; margin-top:16px; max-width:280px; }
+  #ordN { font-size:64px; color:var(--gold); line-height:1; display:block; }
+  .obtns { display:flex; gap:8px; justify-content:center; margin-top:8px; flex-wrap:wrap; }
+  .obtns button, #ordTrays button, #ordPacks button, #packList button { font:inherit; font-size:14px; padding:8px 12px; border-radius:7px; border:1px solid #2f3a49; background:#1c2430; color:#fff; cursor:pointer; }
+  .obtns button:disabled { opacity:.45; cursor:not-allowed; }
+  #ordHand { margin:8px 0; font-size:14px; color:#c6ccd4; min-height:34px; }
+  #ordHand i { display:inline-block; width:56px; height:25px; background-size:100% 100%; border-radius:2px; margin:0 2px; vertical-align:middle; }
+  #ordTrays { display:grid; grid-template-columns:repeat(4,1fr); gap:8px; }
+  .otray { border:2px solid #2f3a49; border-radius:10px; padding:8px; background:#161d27; cursor:pointer; }
+  .otray.bad { border-color:#ff5a5a; animation:oshake .3s; } @keyframes oshake { 25% { transform:translateX(-6px); } 75% { transform:translateX(6px); } }
+  .otray b { display:block; font-size:16px; } .otray em { font-style:normal; font-size:22px; color:var(--gold); display:block; }
+  #ordPacks { margin-top:8px; font-size:14px; min-height:30px; } #ordPacks span { display:inline-block; margin:3px; padding:5px 8px; border:1px solid var(--gold); border-radius:6px; }
+  #packList { display:grid; gap:8px; margin-top:12px; }
+  #shiftLine { font-size:12px; color:#9aa4b1; margin-top:2px; }
+  #shiftBanner { position:fixed; top:31%; left:50%; transform:translateX(-50%); padding:12px 22px; border-radius:10px; background:rgba(20,26,36,.94);
+    border:1px solid var(--gold); color:#fff; font-size:16px; text-align:center; opacity:0; transition:opacity .3s; pointer-events:none; z-index:3; max-width:90vw; }
+  #shiftBanner b { color:var(--gold); }
+  #objective.flash { animation:oflash 1s; } @keyframes oflash { 0%,60% { border-color:#fff; box-shadow:0 0 18px rgba(233,196,106,.9); } }
+  .hidden { display:none !important; }
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+
+<div id="bag" class="panel">
+  <h3>شنطتك</h3>
+  <div class="cap" style="margin:0 0 4px">في الشنطة: <b id="capLoose">0</b> من <b id="capMax">100</b> ورقة</div>
+  <div class="cap" style="margin:0 0 8px">في كيس العملة: <b id="coinHave">0</b> من <b id="coinMax">100</b> جنيه معدن</div>
+  <table>
+    <thead><tr><th>الفئة</th><th>العدّاد</th><th>رزم</th><th>باكوهات</th></tr></thead>
+    <tbody id="bagRows"></tbody>
+  </table>
+  <div class="cap">شايل <b id="capBundles">0</b> من <b id="capCarry">25</b> &nbsp;·&nbsp; مستني عند ماكينة الفرز: <b id="capTray">0</b></div>
+</div>
+
+<div id="vaultBox" class="panel">
+  <h3>اللي اتشال في الخزنة</h3>
+  <div id="vaultAmt">0 <small>من 100,000,000 جنيه</small></div>
+  <div class="bar"><div id="vaultBar"></div></div>
+  <div id="stageLine"></div>
+  <div id="shiftLine"></div>
+</div>
+
+<div id="side" class="panel">
+  <div id="timer">00:00</div>
+  <div>ورق لسه متلمّش: <b id="pilesLeft">878,000</b></div>
+  <div>عملات لسه متلمّتش: <b id="coinsLeft">20,000</b></div>
+  <div>الخزنة: <b id="doorState">مقفولة</b></div>
+  <div>سرعة لَمّ الورق: <b id="grabState">11</b> في الثانية</div>
+  <div>العملة: <b id="coinGrab">1</b> في الكليك</div>
+  <div>الصوت: <b id="sndState">شغّال</b> (M)</div>
+  <div>المزيكا: <b id="musState">شغّالة</b> (N)</div>
+  <div>الحوافز: <b id="bonusAmt" style="color:#e9c46a">0</b> جنيه</div>
+  <div>سبايك الدهب: <b id="goldAmt">0 من 12</b></div>
+  <div>ورق مزوّر اتكشف: <b id="fakeAmt">0</b></div>
+  <div id="stolenRow" style="display:none;color:#ff7b7b">اتسرق: <b id="stolenAmt">0</b> جنيه</div>
+</div>
+
+<div id="objective" class="panel"><span>المطلوب</span><div id="objText"></div></div>
+<div id="prompt"></div>
+<div id="toast"></div>
+<div id="alert"></div>
+<div id="shiftBanner"></div>
+<div id="redFlash"></div>
+<div id="cross"></div>
+<div id="vignette"></div>
+<div id="touchUi"><div id="stick"><div id="knob"></div></div><button id="tPick">لِمّ</button><button id="tUse">✋</button><button id="tRun">جري</button><button id="tPause">❚❚</button></div>
+
+<div id="startOv" class="overlay">
+  <div class="card">
+    <h1>خزنة الفلوس</h1>
+    <p>فيه <b>100,000,000 جنيه</b> (878,000 ورقة و20,000 جنيه معدن) متكوّمين كومة في نص الأوضة دي: ورق فئة 200 و100 و50 و20 و10، وجنيهات معدن.</p>
+    <ol>
+      <li>وجّه على الفلوس ودوس <b>كليك</b>: كل كليك بورقة واحدة بس. لو فضلت دايس بتلمّ ورقة ورا ورقة. الشنطة بتشيل 100 ورقة في الأول، وكل ما تلمّ أكتر الشنطة بتكبر وإيدك بتبقى أسرع. الكومة مصمتة: لازم تشيل منها عشان تعرف تدخل جواها.</li>
+      <li>ودّي الفلوس الملخبطة على <b>ماكينة الفرز والعد</b>. بتفصل كل فئة لوحدها، وتعدّهم رزم، كل رزمة 100.</li>
+      <li>شيل الرزم المعدودة وودّيها <b>مكنة الأستكه</b>. بتحط على كل رزمة ورقة بيانات وأستك وتطلّعها باكو جاهز. والجنيهات المعدن متبعترة وسط الورق في نفس الكومة: بتلمّها واحد واحد في كيس العملة (100 في الأول، وبيكبر لحد ما تلمّ 20 في الكليك)، وتوديها على طول <b>ماكينة لف العملة</b> من غير فرز، وهي بتعِد كل 100 وتلفّهم.</li>
+      <li>افتح الخزنة بـ<b>الباسورد بتاعك</b>. الباب بيقفل تاني كل ما تخرج، فهتكتبه كل مرة.</li>
+      <li>في الخزنة الرفوف كلها فاضية: إنت اللي بتختار كل فئة تتحط على أنهي رف، وبعدها ترُص عليه.</li>
+      <li>كل باكو بترُصّه بيديك <b>حوافز</b>. اصرفها من <b>مكتب الترقيات</b> (على يمين الأوضة) على إيد أسرع، شنطة أكبر، عربية نقل، عامل بيلمّ معاك، سير بين المكنتين، وحارس أمن.</li>
+      <li>خلّي بالك من <b>الحرامي</b>: كل شوية بيدخل من باب الطوارئ ويسرق من الكومة. اجري عليه والحقه قبل ما يهرب، ترجع الفلوس لشنطتك. ولو كتبت الباسورد غلط 3 مرات ورا بعض، الإنذار بيضرب والكيباد بيقفل شوية.</li>
+      <li>اللعبة <b>4 مراحل</b> (مليون، 10 مليون، 50 مليون، 100 مليون) وكل مرحلة ليها مكافأة حوافز. وجوّه الكومة مستخبي <b>12 سبيكة دهب</b>، كل واحدة بـ1,000 حوافز. وماكينة الفرز بتكشف <b>الورق المزوّر</b> وتديك عليه مكافأة.</li>
+      <li>على الموبايل والتابلت: عصاية المشي على الشمال، اسحب على الشاشة عشان تبُص، وزرار «لِمّ» وزرار ✋ (بدل E) على اليمين.</li>
+    </ol>
+    <div class="keys">
+      <b>W A S D</b><span>المشي</span>
+      <b>الماوس</b><span>بُص حواليك</span>
+      <b>Shift</b><span>الجري</span>
+      <b>كليك شمال</b><span>لِمّ الورقة اللي موجّه عليها (خليك دايس عشان تكمّل لَمّ)</span>
+      <b>E</b><span>شغّل الماكينات والكيباد والرفوف</span>
+      <b>M</b><span>اقفل أو شغّل الصوت</span>
+      <b>N</b><span>اقفل أو شغّل المزيكا</span>
+      <b>Esc</b><span>وقفة (اللعبة بتتحفظ لوحدها)</span>
+    </div>
+    <div id="recBox" class="hidden"></div>
+    <div id="contBox" class="hidden">
+      <div id="contInfo"></div>
+      <button class="big" id="contBtn">كمّل اللعبة المحفوظة</button>
+    </div>
+    <div class="pw">
+      <label for="pwInput" id="pwLabel">اختار باسورد الخزنة (4 أرقام)</label>
+      <input id="pwInput" type="text" inputmode="numeric" maxlength="4" autocomplete="off" placeholder="0000">
+      <div id="pwErr"></div>
+      <div style="color:var(--gold);font-size:14px">مستوى الصعوبة</div>
+      <div class="diff" id="diffBtns">
+        <button data-d="0">هادي<br><small>من غير حرامي</small></button>
+        <button data-d="1" class="on">عادي<br><small>حرامي كل شوية</small></button>
+        <button data-d="2">صعب<br><small>حرامي أسرع وأكتر</small></button>
+      </div>
+    </div>
+    <button class="big" id="startBtn">يلا بينا</button>
+    <div><button class="small" id="sndBtn1" style="margin-top:10px">الأصوات والمزيكا</button></div>
+  </div>
+</div>
+
+<div id="pauseOv" class="overlay hidden">
+  <div class="card"><h1>وقفة</h1><p>اللعبة اتحفظت. دوس كليك عشان تكمّل.</p><button class="big" id="resumeBtn">كمّل</button>
+    <div><button class="small" id="sndBtn2" style="margin-top:10px">الأصوات والمزيكا</button> <button class="small" id="storeBtn2" style="margin-top:10px">المتجر</button></div></div>
+</div>
+
+<div id="shop" class="overlay hidden">
+  <div class="card">
+    <h1 style="font-size:24px">مكتب الترقيات</h1>
+    <p>معاك <b id="shopBonus">0</b> جنيه حوافز. الحوافز بتيجي من كل باكو بترُصّه في الخزنة، ومن مسك الحرامي.</p>
+    <div id="shopList" class="rows"></div>
+    <div style="font-size:12px;color:#8b95a3;margin-top:12px">دوس «اشتري» أو اكتب رقم الترقية · Esc = اقفل</div>
+    <div><button class="small" id="storeBtn3" style="margin-top:10px">عايز حوافز أكتر؟ افتح المتجر</button> <button class="small" id="shopClose" style="margin-top:10px">اقفل</button></div>
+  </div>
+</div>
+
+<div id="soundOv" class="overlay hidden">
+  <div class="card">
+    <h1 style="font-size:24px">الأصوات والمزيكا</h1>
+    <p>تقدر تحط تسجيل حقيقي مكان أي صوت: دوس «اختار ملف» واختار ملف صوت (mp3 أو wav) من جهازك. الملف بيتحفظ في المتصفح وبيفضل شغّال كل مرة تفتح اللعبة.</p>
+    <div id="sndList" class="rows"></div>
+    <input type="file" id="sndFile" accept="audio/*" class="hidden">
+    <button class="big" id="sndClose">تمام</button>
+  </div>
+</div>
+
+<div id="keypad" class="overlay hidden">
+  <div class="card">
+    <div id="kpDisplay">____</div>
+    <div id="kpGrid"></div>
+    <div id="kpHint"></div>
+  </div>
+</div>
+
+<div id="chooser" class="overlay hidden">
+  <div class="card">
+    <h1 style="font-size:24px">تحط إيه على الرف ده؟</h1>
+    <p>اختار فئة واحدة. الرف هيفضل بتاعها لحد آخر اللعبة.</p>
+    <div id="chList"></div>
+    <div id="chHint">دوس على الفئة أو اكتب رقمها · Esc = اقفل</div>
+  </div>
+</div>
+
+<div id="storeOv" class="overlay hidden">
+  <div class="card">
+    <h1 style="font-size:24px">المتجر</h1>
+    <p id="storePay"></p>
+    <div id="storeList" class="rows"></div>
+    <div class="pw">
+      <label for="codeInput">معاك كود شراء؟ اكتبه هنا</label>
+      <input id="codeInput" type="text" maxlength="14" autocomplete="off" placeholder="XXXX-XXXX-XXXX" style="width:280px;font-size:20px;letter-spacing:.08em;text-indent:0">
+      <div id="codeMsg" style="min-height:18px;margin-top:6px;font-size:13px"></div>
+      <button class="small" id="codeBtn">فعّل الكود</button>
+    </div>
+    <button class="big" id="storeClose">تمام</button>
+  </div>
+</div>
+
+<div id="orderOffer" class="overlay hidden">
+  <div class="card">
+    <h1 style="font-size:24px">مكتب الطلبيات</h1>
+    <p>طلبيات جانبية كلها بإيدك: تفرز، تعِد، تحط الأستك، وتسلّم. فلوس الطلبيات ملهاش دعوة بالـ100,000,000 بتوع الخزنة.</p>
+    <div id="offerReq" class="rows"></div>
+    <p><label style="cursor:pointer"><input type="checkbox" id="quietBox"> وردية هادية (من غير وقت)</label></p>
+    <div><button class="small" id="offerNo" style="margin-top:6px">مش دلوقتي</button></div>
+  </div>
+</div>
+
+<div id="orderOv" class="overlay hidden">
+  <div class="card">
+    <h1 style="font-size:20px" id="ordTitle"></h1>
+    <div id="ordReq"></div>
+    <div id="ordMsg"></div>
+    <div id="ordMain"></div>
+    <div id="ordHand"></div>
+    <div id="ordTrays"></div>
+    <div id="ordPacks"></div>
+    <button class="big" id="ordLeave">قوم من الترابيزة</button>
+  </div>
+</div>
+
+<div id="packOv" class="overlay hidden">
+  <div class="card" style="width:440px">
+    <h1 style="font-size:22px" id="packTitle"></h1>
+    <p>اختار الباكو اللي هتسلّمه. لو مش مظبوط المحل هيرفضه ويفضل معاك.</p>
+    <div id="packList"></div>
+    <div style="font-size:12px;color:#8b95a3;margin-top:12px">Esc = اقفل</div>
+  </div>
+</div>
+
+<div id="orderRes" class="overlay hidden">
+  <div class="card">
+    <h1 style="font-size:26px">الطلبية اتسلّمت!</h1>
+    <div id="resBody"></div>
+    <div><button class="small hidden" id="resAd" style="margin-bottom:6px"></button></div>
+    <button class="big" id="resOk">تمام</button>
+  </div>
+</div>
+
+<div id="noteView" class="overlay hidden">
+  <div class="paper"><div></div><strong id="noteCode"></strong><em></em></div>
+</div>
+
+<div id="winOv" class="overlay hidden">
+  <div class="card">
+    <h1 id="winTitle">الخزنة اتأمّنت!</h1>
+    <p id="winLine"></p>
+    <p id="winLine2"></p>
+    <p id="winRecord" style="color:var(--gold)"></p>
+    <button class="big" id="winMore">كمّل في مكتب الطلبيات</button>
+    <div><button class="small" style="margin-top:10px" onclick="if(confirm('لعبة جديدة هتبدأ من الأول. متأكد؟'))location.reload()">العب من الأول</button></div>
+  </div>
+</div>
+
+<script src="notes.js"></script>
+<script src="store.js"></script>
+<script src="platform.js"></script>
+<script src="three.min.js"></script>
+<script>window.THREE || document.write('<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"><\/script>');</script>
+<script>
+(() => {
+'use strict';
+
+// ───────────────────────── Config ─────────────────────────
+const DENOMS = [200, 100, 50, 20, 10, 1];              // 1 = the one-pound coin
+const COLORS = { 1: '#8f98a3', 10: '#d9772f', 20: '#3d78b8', 50: '#b8553f', 100: '#2f8f83', 200: '#a88a22' };
+const MIX = { 200: 150, 100: 150, 50: 80, 20: 40, 10: 19 };   // notes of each kind in every 439 (x 2,000 = the whole heap); coins have their own heap
+const NOTE_DENOMS = [200, 100, 50, 20, 10];
+const TOTAL_COINS = 20000;
+// [coins collected so far, coins the pouch then holds, coins one click then picks]
+const COIN_TIERS = [[0, 100, 1], [200, 300, 2], [700, 800, 5], [2200, 2500, 10], [6000, 6000, 20]];
+const MIX_OLD = 0;   // pieces of each kind in every 97 (x 10,000 = the whole pile)
+const zeroes = () => { const o = {}; DENOMS.forEach(d => o[d] = 0); return o; };
+const dn = d => d === 1 ? 'جنيه معدن' : d + ' جنيه';   // display name of a denomination
+const TOTAL_SHEETS = 878000;                           // 300k x 200 + 300k x 100 + 200k x 50 = 100,000,000 EGP
+const BILLS_UNUSED = 0;    // bills in the room per denomination (4,000 in total)
+const PYR = { S: 5.2, K: 40, dy: 0.08, z: 0, floor: 1000 };   // money pyramid: half base, layers, layer height, centre z, loose bills around it
+const BILL_NOTES = 1;                                  // each bill you pick up counts as 50 notes
+const REACH = 4.5;                                   // how far away you can pick a bill up (metres)
+const NOTES_PER_BUNDLE = 100;
+const MAX_BUNDLES = 25;                               // smallest carry limit (grows with the bag)
+// the bag grows as you collect: [sheets collected so far, sheets the bag then holds]
+// [sheets collected so far, sheets the bag then holds, sheets one click then picks]
+const BAG_TIERS = [[0, 100, 1], [200, 300, 2], [1000, 1000, 5], [5000, 5000, 20], [25000, 20000, 60], [100000, 60000, 150], [300000, 150000, 300]];
+const _unused = 0;        // no limit on loose notes; 250 stacks/bundles carried at once
+const TARGET = 100000000;
+const SORT_CHUNK = 1;                                 // notes the sorter feeds per tick
+const UNIT_CAP = 540;                                 // bundles one shelf unit holds
+const SHELF_CAP = { 200: 3000, 100: 3000, 50: 1600, 20: 800, 10: 300, 1: 1000 };    // bundles to shelve: 15M + 7.5M + 2.5M = 25M
+const ROOM = { hw: 20, hd: 17, h: 9 };                 // main room half-width / half-depth / height
+const VAULT = { hw: 13, z0: -17.3, z1: -49.5 };
+let CODE = '';                                        // the player sets this on the start screen
+const fmt = n => n.toLocaleString('en-US');
+const $ = id => document.getElementById(id);
+
+// ───────────────────────── Phase 2: saving, upgrades, danger ─────────────────────────
+const SAVE_KEY = 'moneyVault.save.v2', PREF_KEY = 'moneyVault.prefs';
+const HAND_MUL = [1, 2, 3], BAG_MUL = [1, 2, 4], TROLLEY_MUL = [1, 2, 4, 8], WORKER_RATE = [0, 15, 60, 250];
+const up = { hands: 0, bag: 0, trolley: 0, worker: 0, belt: 0, guard: 0, ohand: 0, plant: 0, rug: 0, frame: 0 };          // level of every upgrade bought at the desk
+let difficulty = 1, bonus = 0, thievesCaught = 0, thievesEscaped = 0, lastSave = 0, beltAcc = 0;
+let kpLockUntil = 0, alarmUntil = 0, wrongStreak = 0, sirenAt = 0;
+const stolen = zeroes(), ready = zeroes();             // notes a thief got away with; finished bundles waiting at the end of the belt
+// how thieves behave on each difficulty (0 = no thieves): seconds before the first one, gap between visits, walking and fleeing speed, seconds spent stealing, greed
+const THIEF = [null, { first: 120, gap: [150, 270], speed: 3.4, flee: 4.6, time: 9, mul: 1 }, { first: 75, gap: [80, 150], speed: 4.4, flee: 5.6, time: 12, mul: 2 }];
+
+// ───────────────────────── Phase 3: stages, treasure, fakes, touch, store ─────────────────────────
+const STAGES = [[1e6, 500], [1e7, 2000], [5e7, 5000], [1e8, 10000]];   // [amount secured, bonus paid for reaching it]
+// the campaign is worked in ten shifts: each ends when the safe reaches its target, pays a small bonus, shows a summary and saves
+const SHIFTS = [1e5, 1e6, 5e6, 1e7, 2e7, 3.5e7, 5e7, 6.5e7, 8e7, 1e8], SHIFT_BONUS = 300;
+let shift = 0, shiftStart = 0, shiftTimer = 0;
+const REC_KEY = 'moneyVault.records', USED_KEY = 'moneyVault.usedCodes';
+const GOLD_BARS = 12, GOLD_BONUS = 1000, FAKE_ODDS = 300, FAKE_BONUS = 5;   // about one note in 300 turns out to be fake
+let stage = 0, goldFound = 0, fakesInBag = 0, fakesCaught = 0, touchMode = false, stickX = 0, stickY = 0, runOn = false, flyAt = 0;
+const gold = [];                                       // { c: column, thr: how far the column must be dug down before the bar shows, taken }
+const STORE = window.STORE_CONFIG || { payText: '', payUrl: '', products: [], codes: {} };
+const codeHash = str => {                              // purchase codes are stored only as these fingerprints
+  let h1 = 0xdeadbeef, h2 = 0x41c6ce57;
+  for (let i = 0; i < str.length; i++) { const ch = str.charCodeAt(i); h1 = Math.imul(h1 ^ ch, 2654435761); h2 = Math.imul(h2 ^ ch, 1597334677); }
+  h1 = Math.imul(h1 ^ (h1 >>> 16), 2246822507) ^ Math.imul(h2 ^ (h2 >>> 13), 3266489909);
+  h2 = Math.imul(h2 ^ (h2 >>> 16), 2246822507) ^ Math.imul(h1 ^ (h1 >>> 13), 3266489909);
+  return (4294967296 * (2097151 & h2) + (h1 >>> 0)).toString(36);
+};
+
+// ───────────────────────── State ─────────────────────────
+let state = 'menu';                                   // menu | playing | paused | keypad | note | won
+const loose   = zeroes();
+const bundles = zeroes();
+const shelved = zeroes();
+const hopper  = zeroes();            // notes counted so far towards the next stack of 100
+const tray    = zeroes();            // counted stacks waiting on the sorter
+const stacks  = zeroes();            // counted stacks you carry (not yet labelled/banded)
+let coinPouch = 0, coinsCollected = 0, coinsLeft = TOTAL_COINS;
+let sortRate = 40, packRate = 6, shelfRate = 8, lastShelf = 0, sorting = false, sortAcc = 0, packing = false, packAcc = 0, coining = false, coinAcc = 0, coinRate = 6, lastCoin = 0;
+const player = { x: 0, z: 16.2, yaw: 0, pitch: 0 };
+const door = { unlocked: false, angle: 0, passable: false };
+let knowsCode = false, elapsed = 0, hudDirty = true, stepAcc = 0, stepFoot = 0;
+let banding = false, bandAcc = 0, shelving = null, shelfAcc = 0, pickAcc = 0;
+const sum = o => DENOMS.reduce((a, d) => a + o[d], 0);
+const value = o => DENOMS.reduce((a, d) => a + o[d] * d, 0);
+
+// ───────────────────────── Audio ─────────────────────────
+let coinerGain = null, coinerMotor = null, coinerOn = false;
+let counterGain = null, counterLfo = null, counterMotor = null, counterMotor2 = null, counterOn = false;
+let actx = null, master = null, muted = false, noiseBuf = null, humGain = null, humOn = false, lastBand = 0;
+// real recordings the player picks replace the computer-made sounds; they are kept in the browser's own storage
+const SND_INFO = [['sorter', 'ماكينة الفرز والعد وهي شغّالة'], ['coins', 'ماكينة لف العملة وهي شغّالة'], ['bander', 'مكنة الأستكه وهي شغّالة'],
+  ['music', 'مزيكا الخلفية'], ['alarm', 'الإنذار'], ['win', 'الفوز']];
+const SND = {}; SND_INFO.forEach(([k]) => SND[k] = { el: null, name: '', on: false });
+let sndDb = null, musicOn = true, musicGain = null, musicStep = 0, musicNext = 0;
+try { musicOn = JSON.parse(localStorage.getItem(PREF_KEY) || '{}').music !== false; } catch (e) {}
+function loopSound(k, on) {                             // start/stop the player's own recording; false = there is none, use the built-in sound
+  const s = SND[k]; if (!s.el) return false;
+  if (on !== s.on) { s.on = on; if (on) { s.el.currentTime = 0; const p = s.el.play(); if (p && p.catch) p.catch(() => {}); } else s.el.pause(); }
+  return true;
+}
+function setSound(k, file, name, store = true) {        // file = null puts the built-in sound back
+  const s = SND[k];
+  if (s.el) { s.el.pause(); URL.revokeObjectURL(s.el.src); s.el = null; s.on = false; }
+  s.name = '';
+  if (file) { const el = new Audio(URL.createObjectURL(file)); el.loop = k !== 'win'; el.volume = k === 'music' ? 0.4 : 0.8; el.muted = muted; s.el = el; s.name = name; }
+  if (store && sndDb) { try { const st = sndDb.transaction('s', 'readwrite').objectStore('s'); if (file) st.put({ file, name }, k); else st.delete(k); } catch (e) {} }
+  drawSounds();
+}
+// built-in background music: a slow, quiet loop of four chords with a soft plucked line over it
+const CHORDS = [[220, 261.63, 329.63], [174.61, 220, 261.63], [130.81, 164.81, 196], [196, 246.94, 293.66]];
+function tone(f, at, dur, type, vol, attack) {
+  const o = actx.createOscillator(), g = actx.createGain(); o.type = type; o.frequency.value = f;
+  g.gain.setValueAtTime(0.0001, at); g.gain.linearRampToValueAtTime(vol, at + attack); g.gain.exponentialRampToValueAtTime(0.0001, at + dur);
+  o.connect(g).connect(musicGain); o.start(at); o.stop(at + dur + 0.05);
+}
+function musicTick() {
+  if (!actx) return;
+  const custom = loopSound('music', musicOn), t = actx.currentTime;
+  musicGain.gain.setTargetAtTime(!custom && musicOn ? 1 : 0, t, 0.4);
+  if (custom || !musicOn) { musicNext = 0; return; }
+  if (musicNext < t) musicNext = t + 0.05;
+  while (musicNext < t + 0.5) {
+    const st = musicStep++, ch = CHORDS[Math.floor(st / 8) % CHORDS.length], at = musicNext;
+    if (st % 8 === 0) ch.forEach(f => tone(f / 2, at, 4.6, 'sine', 0.026, 1.2));
+    tone(ch[[0, 1, 2, 1, 0, 2, 1, 2][st % 8]] * (st % 16 >= 8 ? 2 : 1), at, 1.1, 'triangle', 0.028, 0.01);
+    musicNext += 0.55;
+  }
+}
+function toggleMusic() {
+  musicOn = !musicOn; $('musState').textContent = musicOn ? 'شغّالة' : 'مقفولة';
+  try { localStorage.setItem(PREF_KEY, JSON.stringify({ music: musicOn })); } catch (e) {}
+  musicTick();
+}
+function initAudio() {
+  if (actx) return;
+  actx = new (window.AudioContext || window.webkitAudioContext)();
+  master = actx.createGain(); master.gain.value = 0.9; master.connect(actx.destination);
+  noiseBuf = actx.createBuffer(1, actx.sampleRate * 2, actx.sampleRate);
+  const ch = noiseBuf.getChannelData(0); for (let i = 0; i < ch.length; i++) ch[i] = Math.random() * 2 - 1;
+  // room tone: soft air-conditioning rumble that never stops
+  const amb = actx.createBufferSource(); amb.buffer = noiseBuf; amb.loop = true;
+  const af = actx.createBiquadFilter(); af.type = 'lowpass'; af.frequency.value = 230;
+  const ag = actx.createGain(); ag.gain.value = 0.06;
+  amb.connect(af).connect(ag).connect(master); amb.start();
+  // machine motor hum: silent until a machine is running
+  humGain = actx.createGain(); humGain.gain.value = 0;
+  const hf = actx.createBiquadFilter(); hf.type = 'lowpass'; hf.frequency.value = 420;
+  [[58, 'sawtooth'], [116.5, 'square'], [174, 'sawtooth']].forEach(([f, type]) => {
+    const o = actx.createOscillator(); o.type = type; o.frequency.value = f; o.connect(hf); o.start();
+  });
+  hf.connect(humGain).connect(master);
+  // ── banknote counting machine: motor whirr + the fast "frrrrt" of notes flicking through, about 23 a second
+  counterGain = actx.createGain(); counterGain.gain.value = 0; counterGain.connect(master);
+  const loopNoise = () => { const n = actx.createBufferSource(); n.buffer = noiseBuf; n.loop = true; n.start(0, Math.random()); return n; };
+  counterLfo = actx.createOscillator(); counterLfo.type = 'sawtooth'; counterLfo.frequency.value = 23; counterLfo.start();
+  const shape = (fn) => { const ws = actx.createWaveShaper(), curve = new Float32Array(512); for (let i = 0; i < 512; i++) curve[i] = fn(i / 255.5 - 1); ws.curve = curve; counterLfo.connect(ws); return ws; };
+  // each note: a soft paper slap (the body of the sound) ...
+  const slapF = actx.createBiquadFilter(); slapF.type = 'bandpass'; slapF.frequency.value = 2100; slapF.Q.value = 0.8;
+  const slapG = actx.createGain(); slapG.gain.value = 0;
+  shape(x => x > 0.1 ? Math.pow((1 - x) / 0.9, 1.5) * 0.9 : 0).connect(slapG.gain);
+  loopNoise().connect(slapF).connect(slapG).connect(counterGain);
+  // ... and a sharp tick as it snaps past the counting wheel
+  const tickF = actx.createBiquadFilter(); tickF.type = 'highpass'; tickF.frequency.value = 5200;
+  const tickG = actx.createGain(); tickG.gain.value = 0;
+  shape(x => (x > 0.1 && x < 0.32) ? 0.75 : 0).connect(tickG.gain);
+  loopNoise().connect(tickF).connect(tickG).connect(counterGain);
+  // the motor and rollers underneath
+  counterMotor = actx.createOscillator(); counterMotor.type = 'sawtooth'; counterMotor.frequency.value = 45; counterMotor.start();
+  const motor2 = actx.createOscillator(); motor2.type = 'square'; motor2.frequency.value = 90; motor2.start();
+  counterMotor2 = motor2;
+  const motF = actx.createBiquadFilter(); motF.type = 'lowpass'; motF.frequency.value = 650;
+  const motG = actx.createGain(); motG.gain.value = 0.16;
+  counterMotor.connect(motF); motor2.connect(motF); motF.connect(motG).connect(counterGain);
+  const whirF = actx.createBiquadFilter(); whirF.type = 'bandpass'; whirF.frequency.value = 950; whirF.Q.value = 1.6;
+  const whirG = actx.createGain(); whirG.gain.value = 0.2;
+  loopNoise().connect(whirF).connect(whirG).connect(counterGain);
+  // ── coin counting and wrapping machine: coins rattling round the hopper and dropping down the tube, over a motor
+  coinerGain = actx.createGain(); coinerGain.gain.value = 0; coinerGain.connect(master);
+  // irregular clatter: two rhythms that never line up open and close the sound
+  const gateA = actx.createOscillator(); gateA.type = 'square'; gateA.frequency.value = 29; gateA.start();
+  const gateB = actx.createOscillator(); gateB.type = 'square'; gateB.frequency.value = 43.7; gateB.start();
+  const gate = actx.createGain(); gate.gain.value = 0.35;
+  const gA = actx.createGain(); gA.gain.value = 0.3; gateA.connect(gA).connect(gate.gain);
+  const gB = actx.createGain(); gB.gain.value = 0.3; gateB.connect(gB).connect(gate.gain);
+  // metal on metal: hiss squeezed through narrow ringing bands, like coins striking each other and the bowl
+  [[3150, 22, 0.9], [4700, 26, 0.8], [6900, 28, 0.6], [9200, 24, 0.35]].forEach(([fq, q, lv]) => {
+    const bp = actx.createBiquadFilter(); bp.type = 'bandpass'; bp.frequency.value = fq; bp.Q.value = q;
+    const g = actx.createGain(); g.gain.value = lv * 2.2;
+    loopNoise().connect(bp).connect(g).connect(gate);
+  });
+  const rattleF = actx.createBiquadFilter(); rattleF.type = 'highpass'; rattleF.frequency.value = 2400;
+  const rattleG = actx.createGain(); rattleG.gain.value = 0.12;
+  loopNoise().connect(rattleF).connect(rattleG).connect(gate);
+  gate.connect(coinerGain);
+  // the spinning disc and motor
+  coinerMotor = actx.createOscillator(); coinerMotor.type = 'sawtooth'; coinerMotor.frequency.value = 38; coinerMotor.start();
+  const cmF = actx.createBiquadFilter(); cmF.type = 'lowpass'; cmF.frequency.value = 520;
+  const cmG = actx.createGain(); cmG.gain.value = 0.2;
+  coinerMotor.connect(cmF).connect(cmG).connect(coinerGain);
+  const rumF = actx.createBiquadFilter(); rumF.type = 'bandpass'; rumF.frequency.value = 420; rumF.Q.value = 1.2;
+  const rumG = actx.createGain(); rumG.gain.value = 0.22;
+  loopNoise().connect(rumF).connect(rumG).connect(coinerGain);
+  musicGain = actx.createGain(); musicGain.gain.value = 0; musicGain.connect(master);
+  setInterval(musicTick, 200);
+}
+function setCoiner(on) {                                // the coin machine spins up, rattles and spins down
+  if (loopSound('coins', on)) on = false;
+  if (!actx || on === coinerOn) return;
+  coinerOn = on; const t = actx.currentTime;
+  coinerGain.gain.setTargetAtTime(on ? 0.5 : 0, t, on ? 0.05 : 0.14);
+  coinerMotor.frequency.setTargetAtTime(on ? 96 : 38, t, on ? 0.12 : 0.18);
+}
+function setCounter(on) {                               // the counting machine spins up, runs and spins down
+  if (loopSound('sorter', on)) on = false;
+  if (!actx || on === counterOn) return;
+  counterOn = on; const t = actx.currentTime;
+  counterGain.gain.setTargetAtTime(on ? 0.55 : 0, t, on ? 0.04 : 0.1);
+  counterMotor.frequency.setTargetAtTime(on ? 118 : 45, t, on ? 0.09 : 0.14);
+  counterMotor2.frequency.setTargetAtTime(on ? 236 : 90, t, on ? 0.09 : 0.14);
+  counterLfo.frequency.setTargetAtTime(on ? 23 : 9, t, on ? 0.07 : 0.12);
+}
+function beep(freq, dur = 0.08, type = 'sine', vol = 0.08, slideTo = 0) {
+  if (!actx) return;
+  const t = actx.currentTime, o = actx.createOscillator(), g = actx.createGain();
+  o.type = type; o.frequency.setValueAtTime(freq, t);
+  if (slideTo) o.frequency.exponentialRampToValueAtTime(slideTo, t + dur);
+  g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+  o.connect(g).connect(master); o.start(t); o.stop(t + dur + 0.02);
+}
+function noise(dur, vol, freq, type = 'bandpass', q = 1, slideTo = 0) {   // filtered hiss: paper, thuds, rumble
+  if (!actx) return;
+  const t = actx.currentTime, s = actx.createBufferSource(), f = actx.createBiquadFilter(), g = actx.createGain();
+  s.buffer = noiseBuf; f.type = type; f.Q.value = q; f.frequency.setValueAtTime(freq, t);
+  if (slideTo) f.frequency.exponentialRampToValueAtTime(slideTo, t + dur);
+  g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+  s.connect(f).connect(g).connect(master); s.start(t, Math.random() * 1.5, dur + 0.05);
+}
+const sfx = {
+  pick()  { if (!actx || actx.currentTime - lastPickSfx < 0.045) return; lastPickSfx = actx.currentTime; noise(0.12, 0.4, 2400 + Math.random() * 2000, 'bandpass', 0.8, 6500); },            // paper swish
+  step(i) { noise(0.09, 0.3, i ? 140 : 185, 'lowpass'); },                                      // footstep
+  count() { noise(0.02, 0.1, 4200 + Math.random() * 1500, 'bandpass', 4); },                    // notes flicking through the counter
+  stack() { noise(0.1, 0.45, 320, 'lowpass'); beep(1320, 0.09, 'sine', 0.05); },                // a stack of 100 drops out + ding
+  coin()  { if (!actx || actx.currentTime - lastCoin < 0.07) return; lastCoin = actx.currentTime;
+            beep(2300 + Math.random() * 500, 0.07, 'triangle', 0.06); beep(3700, 0.1, 'sine', 0.035); noise(0.03, 0.12, 5200, 'highpass'); },   // coins clinking
+  band()  { if (actx && actx.currentTime - lastBand < 0.085) return; if (actx) lastBand = actx.currentTime;
+            beep(950, 0.08, 'triangle', 0.1, 210); noise(0.035, 0.22, 3200, 'highpass'); },     // elastic snap
+  shelf() { if (!actx || actx.currentTime - lastShelf < 0.07) return; lastShelf = actx.currentTime; noise(0.07, 0.35, 260, 'lowpass'); },                                               // bundle lands on the shelf
+  key(n)  { beep(697 + (n % 3) * 110, 0.09, 'sine', 0.05); beep(1209 + (n % 4) * 120, 0.09, 'sine', 0.05); },
+  wrong() { beep(150, 0.45, 'sawtooth', 0.09); beep(157, 0.45, 'square', 0.05); },
+  granted() { beep(660, 0.12); setTimeout(() => beep(990, 0.28), 120); },
+  doorMove(dur) { beep(72, dur, 'sawtooth', 0.07, 46); noise(dur, 0.3, 150, 'lowpass'); beep(380, 0.6, 'sine', 0.03, 720); },  // heavy door + servo
+  clunk() { noise(0.2, 0.8, 190, 'lowpass'); beep(88, 0.22, 'square', 0.12, 48); },             // bolt / door stop
+  take()  { noise(0.15, 0.35, 900, 'bandpass', 0.7); beep(520, 0.1, 'sine', 0.05); },
+  done()  { beep(700, 0.12); setTimeout(() => beep(1050, 0.22), 110); },
+  rolled() { noise(0.14, 0.7, 240, 'lowpass'); beep(310, 0.16, 'sawtooth', 0.09, 110); setTimeout(() => { noise(0.05, 0.35, 3800, 'highpass'); beep(1500, 0.05, 'square', 0.04); }, 150); },   // roll crimped shut and dropped out
+  counted() { [0, 150, 300].forEach(d => setTimeout(() => beep(2050, 0.09, 'square', 0.05), d + 180)); },   // the machine's own beep-beep-beep when a batch is finished
+  siren() { beep(880, 0.3, 'square', 0.045, 620); setTimeout(() => beep(620, 0.3, 'square', 0.045, 880), 320); },   // two-tone alarm
+  win()   { const s = SND.win; if (s.el) { s.el.currentTime = 0; const p = s.el.play(); if (p && p.catch) p.catch(() => {}); return; }
+            [523, 659, 784, 1047, 1319].forEach((f, i) => setTimeout(() => { beep(f, 0.35, 'triangle', 0.1); beep(f / 2, 0.35, 'sine', 0.06); }, i * 140)); }
+};
+function setHum(on) {
+  if (loopSound('bander', on)) on = false;
+  if (!actx || on === humOn) return;
+  humOn = on; humGain.gain.setTargetAtTime(on ? 0.05 : 0, actx.currentTime, 0.1);
+}
+function toggleMute() {
+  muted = !muted;
+  Object.values(SND).forEach(s => { if (s.el) s.el.muted = muted; });
+  if (master) master.gain.setTargetAtTime(muted ? 0 : 0.9, actx.currentTime, 0.02);
+  $('sndState').textContent = muted ? 'مقفول' : 'شغّال';
+}
+const normDigits = s => s.replace(/[٠-٩]/g, c => '٠١٢٣٤٥٦٧٨٩'.indexOf(c));   // Arabic keyboard digits
+
+// ───────────────────────── Renderer / scene ─────────────────────────
+const renderer = new THREE.WebGLRenderer({ canvas: $('c'), antialias: true });
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.outputEncoding = THREE.sRGBEncoding;
+renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x07090c);
+const camera = new THREE.PerspectiveCamera(72, 1, 0.1, 160);
+camera.rotation.order = 'YXZ';
+function resize() {
+  renderer.setSize(innerWidth, innerHeight, false);
+  camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix();
+}
+addEventListener('resize', resize); resize();
+
+scene.add(new THREE.HemisphereLight(0xfff4e0, 0x3a3f48, 0.85));
+const sun = new THREE.DirectionalLight(0xffffff, 0.5); sun.position.set(8, 22, 12); scene.add(sun);
+sun.castShadow = true; sun.shadow.mapSize.set(2048, 2048); sun.shadow.bias = -0.0006;
+Object.assign(sun.shadow.camera, { left: -26, right: 26, top: 24, bottom: -24, near: 1, far: 60 });
+[[-10, -8], [10, -8], [-10, 9], [10, 9]].forEach(([x, z]) => {
+  const l = new THREE.PointLight(0xffe2b0, 0.38, 45, 1.4); l.position.set(x, 8, z); scene.add(l);
+});
+[-23, -31, -39, -46].forEach(z => { const l = new THREE.PointLight(0xcfe6ff, 0.7, 40, 1.4); l.position.set(0, 8, z); scene.add(l); });
+
+// ── texture helpers
+function canvasTex(w, h, draw) {
+  const c = document.createElement('canvas'); c.width = w; c.height = h;
+  draw(c.getContext('2d'), w, h);
+  const t = new THREE.CanvasTexture(c); t.encoding = THREE.sRGBEncoding; t.anisotropy = 4; return t;
+}
+const BAND_U = [0.27, 0.73];                            // where the two rubber bands sit along the bundle
+function drawBand(g, denom, w, h) {                     // paper label strap + rubber bands across a face
+  const sw = w * 0.17, sx = (w - sw) / 2;
+  g.fillStyle = '#f7f4ea'; g.fillRect(sx, 0, sw, h);
+  g.strokeStyle = 'rgba(0,0,0,.3)'; g.lineWidth = 1.5; g.strokeRect(sx, -2, sw, h + 4);
+  if (h > 100) {                                        // top face: printed label with value and barcode
+    g.save(); g.translate(w / 2, h / 2); g.rotate(-Math.PI / 2);
+    g.fillStyle = '#1d1d1d'; g.textAlign = 'center'; g.textBaseline = 'middle';
+    g.font = 'bold ' + Math.round(sw * 0.26) + 'px Arial'; g.direction = 'rtl'; g.fillText(fmt(denom * 100) + ' جنيه', 0, -sw * 0.24);
+    g.font = Math.round(sw * 0.17) + 'px Arial'; g.fillText('100 x ' + denom, 0, sw * 0.02);
+    for (let i = 0; i < 30; i++) g.fillRect(-h * 0.3 + i * (h * 0.6 / 30), sw * 0.18, (i * 7 + denom) % 3 + 1, sw * 0.2);
+    g.restore();
+  }
+  BAND_U.forEach((u, i) => {
+    const x = w * u, t = (i ? -1 : 1) * w * 0.008;
+    const line = (dx, width, style) => {
+      g.strokeStyle = style; g.lineWidth = width; g.beginPath(); g.moveTo(x - t + dx, -2); g.lineTo(x + t + dx, h + 2); g.stroke();
+    };
+    line(w * 0.006, w * 0.016, 'rgba(0,0,0,.35)');      // shadow
+    line(0, w * 0.011, '#c39a3c');                      // band
+    line(-w * 0.002, w * 0.003, '#ecd08a');             // highlight
+  });
+}
+function edgeTex(denom, bands) {                        // side of a bundle: 100 stacked paper edges
+  return canvasTex(256, 64, (g, w, h) => {
+    g.fillStyle = '#e9e4d6'; g.fillRect(0, 0, w, h);
+    for (let y = 0; y < h; y += 1.3) {
+      g.strokeStyle = Math.random() < 0.3 ? COLORS[denom] : '#5c574a';
+      g.globalAlpha = 0.12 + Math.random() * 0.3; g.lineWidth = 0.8;
+      g.beginPath(); g.moveTo(0, y); g.lineTo(w, y + (Math.random() - 0.5) * 1.5); g.stroke();
+    }
+    g.globalAlpha = 1;
+    if (bands) drawBand(g, denom, w, h);
+  });
+}
+function drawFace(g, img, denom, w, h) {                // a note fills the face; coins are laid out three in a row
+  if (denom !== 1) { g.drawImage(img, 0, 0, w, h); return; }
+  g.fillStyle = '#2f343b'; g.fillRect(0, 0, w, h);
+  const r = h * 0.44;
+  for (let i = 0; i < 3; i++) {
+    const cx = w * (0.18 + i * 0.32), cy = h / 2;
+    g.save(); g.beginPath(); g.arc(cx, cy, r, 0, Math.PI * 2); g.clip(); g.drawImage(img, cx - r * 1.02, cy - r * 1.02, r * 2.04, r * 2.04); g.restore();
+  }
+}
+function coinTex() {                                    // the coin picture on its own, for loose coins
+  const t = canvasTex(256, 256, (g) => { g.fillStyle = '#b9bcc0'; g.fillRect(0, 0, 256, 256); });
+  const src = window.NOTE_IMAGES && window.NOTE_IMAGES[1];
+  if (src) { const img = new Image(); img.onload = () => { t.image.getContext('2d').drawImage(img, -3, -3, 262, 262); t.needsUpdate = true; }; img.src = src; }
+  return t;
+}
+function noteTex(denom, band) {
+  const src = window.NOTE_IMAGES && window.NOTE_IMAGES[denom];
+  if (src) {                                            // real banknote picture (embedded in notes.js)
+    const W = 512, Hh = 224;
+    const t = canvasTex(W, Hh, (g) => { g.fillStyle = COLORS[denom]; g.fillRect(0, 0, W, Hh); if (band) drawBand(g, denom, W, Hh); });
+    const img = new Image();
+    img.onload = () => {
+      const g = t.image.getContext('2d');
+      drawFace(g, img, denom, W, Hh); if (band) drawBand(g, denom, W, Hh);
+      t.needsUpdate = true;
+    };
+    img.src = src;
+    return t;
+  }
+  return canvasTex(256, 128, (g) => {
+    g.fillStyle = COLORS[denom]; g.fillRect(0, 0, 256, 128);
+    g.strokeStyle = 'rgba(255,255,255,.6)'; g.lineWidth = 4; g.strokeRect(8, 8, 240, 112);
+    g.strokeStyle = 'rgba(255,255,255,.2)'; g.lineWidth = 1;
+    for (let i = 0; i < 9; i++) { g.beginPath(); g.arc(128, 64, 10 + i * 7, 0, Math.PI * 2); g.stroke(); }
+    g.fillStyle = 'rgba(255,255,255,.95)'; g.textAlign = 'center'; g.textBaseline = 'middle';
+    if (!band) {
+      g.font = 'bold 58px Georgia'; g.fillText(denom, 128, 56);
+      g.font = 'bold 18px Arial'; g.fillText('EGP', 128, 100);
+    } else {
+      g.font = 'bold 34px Georgia'; g.fillText(denom, 50, 64); g.fillText(denom, 206, 64);
+      g.fillStyle = '#f5f1e4'; g.fillRect(98, 0, 60, 128);
+      g.fillStyle = '#2b2b2b'; g.font = 'bold 15px Arial';
+      g.save(); g.translate(128, 64); g.rotate(-Math.PI / 2); g.fillText(fmt(denom * 100) + ' EGP', 0, 0); g.restore();
+    }
+  });
+}
+function labelTex(text, bg, fg, w = 512, h = 128, font = 'bold 64px Arial') {
+  return canvasTex(w, h, (g) => {
+    g.fillStyle = bg; g.fillRect(0, 0, w, h);
+    g.strokeStyle = fg; g.lineWidth = 6; g.strokeRect(6, 6, w - 12, h - 12);
+    g.direction = 'rtl'; g.fillStyle = fg; g.font = font; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(text, w / 2, h / 2 + 3);
+  });
+}
+const std = (color, extra = {}) => new THREE.MeshStandardMaterial(Object.assign({ color, roughness: 0.8, metalness: 0.05 }, extra));
+function box(w, h, d, mat, x, y, z, parent = scene) {
+  const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat); m.position.set(x, y, z); parent.add(m); return m;
+}
+
+// ── materials
+const floorTex = canvasTex(256, 256, (g) => {
+  g.fillStyle = '#6f6a62'; g.fillRect(0, 0, 256, 256);
+  for (let i = 0; i < 900; i++) { g.fillStyle = `rgba(${Math.random() < .5 ? 0 : 255},${Math.random() < .5 ? 0 : 255},${Math.random() < .5 ? 0 : 255},.03)`; g.fillRect(Math.random() * 256, Math.random() * 256, 3, 3); }
+  g.strokeStyle = 'rgba(0,0,0,.35)'; g.lineWidth = 3; g.strokeRect(0, 0, 256, 256);
+});
+floorTex.wrapS = floorTex.wrapT = THREE.RepeatWrapping;
+const mainFloorTex = floorTex.clone(); mainFloorTex.needsUpdate = true; mainFloorTex.repeat.set(20, 17);
+const vaultFloorTex = floorTex.clone(); vaultFloorTex.needsUpdate = true; vaultFloorTex.repeat.set(13, 16);
+const wallMat = std(0xb9b2a4, { roughness: 0.95 });
+const steelMat = std(0x8b949e, { roughness: 0.35, metalness: 0.85 });
+const darkSteel = std(0x4a525c, { roughness: 0.4, metalness: 0.8 });
+const vaultWallMat = std(0x77808a, { roughness: 0.45, metalness: 0.6 });
+const woodMat = std(0x7a5533, { roughness: 0.7 });
+
+// ── main room
+const { hw, hd, h: H } = ROOM;
+box(hw * 2, 0.2, hd * 2, std(0x6a6a6a, { map: mainFloorTex }), 0, -0.1, 0);   // dark floor so cleared spots stand out
+box(hw * 2, 0.2, hd * 2, std(0xd9d5cc), 0, H + 0.1, 0);
+box(hw * 2, H, 0.3, wallMat, 0, H / 2, hd + 0.15);                 // south
+box(0.3, H, hd * 2, wallMat, -hw - 0.15, H / 2, 0);                // west
+box(0.3, H, hd * 2, wallMat, hw + 0.15, H / 2, 0);                 // east
+box(hw - 1.2, H, 0.3, wallMat, -(hw + 1.2) / 2, H / 2, -hd - 0.15); // north, left of door
+box(hw - 1.2, H, 0.3, wallMat, (hw + 1.2) / 2, H / 2, -hd - 0.15);  // north, right of door
+box(2.4, H - 3, 0.3, wallMat, 0, (H + 3) / 2, -hd - 0.15);                     // lintel
+box(2.9, 0.25, 0.4, darkSteel, 0, 3.12, -hd - 0.12);               // door frame
+box(0.25, 3, 0.4, darkSteel, -1.32, 1.5, -hd - 0.12);
+box(0.25, 3, 0.4, darkSteel, 1.32, 1.5, -hd - 0.12);
+const vaultSign = new THREE.Mesh(new THREE.PlaneGeometry(2.2, 0.45), new THREE.MeshBasicMaterial({ map: labelTex('الخزنة', '#1a1f27', '#e9c46a') }));
+vaultSign.position.set(0, 3.6, -hd + 0.01); scene.add(vaultSign);
+const panelMat = new THREE.MeshBasicMaterial({ color: 0xfff3d6 });
+[[-10, -8], [10, -8], [-10, 9], [10, 9], [0, 0], [0, -13], [0, 13]].forEach(([x, z]) => box(3.5, 0.05, 1.1, panelMat, x, H - 0.03, z));
+
+// ── obstacles (AABB in xz)
+const obstacles = [];
+const addObs = (x0, x1, z0, z1) => obstacles.push({ x0, x1, z0, z1 });
+// pillars
+[[-14.5, -10], [14.5, -10], [-14.5, 10], [14.5, 10]].forEach(([x, z]) => {
+  box(0.7, H, 0.7, std(0xa39c8e, { roughness: 0.9 }), x, H / 2, z); addObs(x - 0.35, x + 0.35, z - 0.35, z + 0.35);
+});
+
+// ── the two machines: sorter/counter (east side) and label + band packer (west side)
+function buildMachine(M, label, fg, bodyColor) {
+  box(3, 0.9, 1.3, darkSteel, M.x, 0.45, M.z);
+  box(3.1, 0.06, 1.4, steelMat, M.x, 0.93, M.z);
+  box(1.3, 0.7, 0.9, std(bodyColor, { roughness: 0.5, metalness: 0.5 }), M.x - 0.5, 1.31, M.z);
+  box(0.9, 0.06, 0.5, std(0x0b0d10), M.x - 0.5, 1.45, M.z + 0.46);
+  const lamp = box(0.12, 0.12, 0.05, new THREE.MeshBasicMaterial({ color: 0x23d160 }), M.x + 0.02, 1.52, M.z + 0.46);
+  const sign = new THREE.Mesh(new THREE.PlaneGeometry(2.6, 0.5), new THREE.MeshBasicMaterial({ map: labelTex(label, '#1a1f27', fg, 640, 128, 'bold 56px Arial') }));
+  sign.position.set(M.x, 2.5, M.z - 0.3); scene.add(sign);
+  box(0.06, 1.3, 0.06, darkSteel, M.x - 1.2, 1.6, M.z - 0.32);
+  box(0.06, 1.3, 0.06, darkSteel, M.x + 1.2, 1.6, M.z - 0.32);
+  addObs(M.x - 1.5, M.x + 1.5, M.z - 0.65, M.z + 0.65);
+  return lamp;
+}
+const MACHINE = { x: 16.5, z: -13.5 };                    // Sort & Count
+const PACKER = { x: -16.5, z: -13.5 };                    // Label & Band
+const machineLamp = buildMachine(MACHINE, 'ماكينة الفرز والعد', '#5dfc9a', 0x2c3440);
+const packerLamp = buildMachine(PACKER, 'مكنة الأستكه', '#ffd43b', 0x40382a);
+const COINER = { x: -10.5, z: -13.5 };                    // Coin roller
+const coinerLamp = buildMachine(COINER, 'ماكينة لف العملة', '#d6dde6', 0x4b5562);
+const COINER_READY = true;
+// live counter screen on the sorter
+const dispCanvas = document.createElement('canvas'); dispCanvas.width = 512; dispCanvas.height = 352;
+const dispTex = new THREE.CanvasTexture(dispCanvas); dispTex.encoding = THREE.sRGBEncoding;
+const disp = new THREE.Mesh(new THREE.PlaneGeometry(2.6, 1.79), new THREE.MeshBasicMaterial({ map: dispTex }));
+disp.position.set(MACHINE.x, 3.75, MACHINE.z - 0.3); scene.add(disp);
+box(0.06, 2.2, 0.06, darkSteel, MACHINE.x - 1.2, 3.35, MACHINE.z - 0.32); box(0.06, 2.2, 0.06, darkSteel, MACHINE.x + 1.2, 3.35, MACHINE.z - 0.32);
+function drawDisplay() {
+  const g = dispCanvas.getContext('2d');
+  g.fillStyle = '#04110a'; g.fillRect(0, 0, 512, 352);
+  g.font = 'bold 34px Consolas, monospace'; g.textBaseline = 'middle';
+  NOTE_DENOMS.forEach((d, i) => {
+    const y = 40 + i * 66;
+    g.fillStyle = COLORS[d]; g.fillRect(14, y - 16, 22, 32);
+    g.direction = 'rtl'; g.fillStyle = '#5dfc9a'; g.textAlign = 'left'; g.fillText(dn(d), 48, y); g.direction = 'ltr';
+    g.textAlign = 'right'; g.fillText(String(hopper[d]).padStart(3, ' ') + '/100', 500, y);
+    g.fillStyle = '#0e3a22'; g.fillRect(232, y - 12, 120, 24);
+    g.fillStyle = '#5dfc9a'; g.fillRect(232, y - 12, 120 * hopper[d] / 100, 24);
+  });
+  dispTex.needsUpdate = true;
+}
+drawDisplay();
+
+// ── desk with the code note (west side)
+const DESK = { x: 18.3, z: 8 };
+box(1.1, 0.07, 2.2, woodMat, DESK.x, 0.78, DESK.z);
+[[-0.45, -1], [0.45, -1], [-0.45, 1], [0.45, 1]].forEach(([dx, dz]) => box(0.08, 0.76, 0.08, woodMat, DESK.x + dx, 0.38, DESK.z + dz));
+box(0.5, 0.5, 0.9, std(0x5d4026), DESK.x - 0.2, 0.5, DESK.z - 0.5);
+box(0.4, 0.03, 0.55, std(0x20242a), DESK.x - 0.1, 0.83, DESK.z + 0.5);               // closed laptop
+const lampHead = box(0.2, 0.08, 0.3, std(0x2a6f4e), DESK.x - 0.35, 1.25, DESK.z - 0.75);
+box(0.04, 0.45, 0.04, darkSteel, DESK.x - 0.4, 1.03, DESK.z - 0.85);
+const stickyTex = canvasTex(128, 128, (g) => {
+  g.fillStyle = '#f7e58a'; g.fillRect(0, 0, 128, 128);
+  g.fillStyle = '#3a3210'; g.font = 'bold 20px Arial'; g.textAlign = 'center'; g.fillText('VAULT', 64, 40);
+  g.font = 'bold 14px Arial'; g.fillText('~ ~ ~ ~', 64, 80);
+});
+const sticky = new THREE.Mesh(new THREE.PlaneGeometry(0.22, 0.22), new THREE.MeshBasicMaterial({ map: stickyTex }));
+sticky.rotation.x = -Math.PI / 2; sticky.rotation.z = 0.3; sticky.position.set(DESK.x + 0.15, 0.822, DESK.z - 0.15);   // (no longer shown: the player sets the password)
+addObs(DESK.x - 0.55, DESK.x + 0.55, DESK.z - 1.1, DESK.z + 1.1);
+// ── phase 2 scenery: the upgrades sign over the desk, the emergency door thieves come through, the belt between the machines
+const shopSign = new THREE.Mesh(new THREE.PlaneGeometry(2.4, 0.5), new THREE.MeshBasicMaterial({ map: labelTex('مكتب الترقيات', '#1a1f27', '#e9c46a') }));
+shopSign.rotation.y = -Math.PI / 2; shopSign.position.set(hw - 0.01, 2.6, DESK.z); scene.add(shopSign);
+const TDOOR = { x: -15, z: hd - 0.8 };
+box(1.7, 2.7, 0.12, std(0x6b2222, { roughness: 0.55, metalness: 0.3 }), TDOOR.x, 1.35, hd - 0.05);
+box(0.5, 0.07, 0.08, steelMat, TDOOR.x, 1.2, hd - 0.14);
+const exitSign = new THREE.Mesh(new THREE.PlaneGeometry(1.7, 0.42), new THREE.MeshBasicMaterial({ map: labelTex('باب الطوارئ', '#7a1010', '#ffffff') }));
+exitSign.rotation.y = Math.PI; exitSign.position.set(TDOOR.x, 3.1, hd - 0.01); scene.add(exitSign);
+const READY = { x: PACKER.x + 2.0, z: PACKER.z };          // finished bundles wait on a table here once the belt is bought
+const beltGroup = new THREE.Group(); beltGroup.visible = false; scene.add(beltGroup);
+box(31.5, 0.1, 0.45, darkSteel, 0, 4.4, -hd + 0.3, beltGroup);
+box(31.5, 0.03, 0.35, std(0x15181c), 0, 4.47, -hd + 0.3, beltGroup);
+[MACHINE.x - 0.9, PACKER.x + 0.9].forEach(x => box(0.3, 3.5, 0.3, darkSteel, x, 2.65, -hd + 0.3, beltGroup));
+box(1.5, 0.9, 1.3, darkSteel, READY.x + 0.87, 0.45, READY.z, beltGroup);
+box(1.56, 0.06, 1.36, steelMat, READY.x + 0.87, 0.93, READY.z, beltGroup);
+
+// ── vault room
+const vz = (VAULT.z0 + VAULT.z1) / 2, vd = VAULT.z0 - VAULT.z1;
+box(VAULT.hw * 2, 0.2, vd, std(0xcfd6de, { map: vaultFloorTex, metalness: 0.3, roughness: 0.6 }), 0, -0.1, vz);
+box(VAULT.hw * 2, 0.2, vd, vaultWallMat, 0, H + 0.1, vz);
+box(0.3, H, vd, vaultWallMat, -VAULT.hw - 0.15, H / 2, vz);
+box(0.3, H, vd, vaultWallMat, VAULT.hw + 0.15, H / 2, vz);
+box(VAULT.hw * 2 + 0.6, H, 0.3, vaultWallMat, 0, H / 2, VAULT.z1 - 0.15);
+[-23, -31, -39, -46].forEach(z => box(4, 0.05, 1, new THREE.MeshBasicMaterial({ color: 0xe4f1ff }), 0, H - 0.03, z));
+
+// ── vault door (hinged on the left, swings into the main room)
+const doorPivot = new THREE.Group(); doorPivot.position.set(-1.2, 0, -hd - 0.02); scene.add(doorPivot);
+box(2.4, 3, 0.28, steelMat, 1.2, 1.5, 0, doorPivot);
+box(2.0, 2.6, 0.06, darkSteel, 1.2, 1.5, 0.16, doorPivot);
+const wheel = new THREE.Group(); wheel.position.set(1.2, 1.55, 0.3); doorPivot.add(wheel);
+wheel.add(new THREE.Mesh(new THREE.TorusGeometry(0.42, 0.045, 10, 32), steelMat));
+for (let i = 0; i < 3; i++) { const s = box(0.84, 0.05, 0.05, steelMat, 0, 0, 0, wheel); s.rotation.z = i * Math.PI / 3; }
+const hub = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.1, 0.2, 16), darkSteel); hub.rotation.x = Math.PI / 2; hub.position.z = -0.06; wheel.add(hub);
+[0.55, 2.45].forEach(y => box(0.5, 0.1, 0.12, darkSteel, 2.2, y, 0.2, doorPivot));
+
+// keypad on the wall
+const KEYPAD = { x: 1.95, z: -hd };
+box(0.34, 0.5, 0.08, std(0x1b2028, { roughness: 0.4 }), KEYPAD.x, 1.45, -hd + 0.04);
+const kpFace = new THREE.Mesh(new THREE.PlaneGeometry(0.28, 0.3), new THREE.MeshBasicMaterial({
+  map: canvasTex(128, 140, (g) => {
+    g.fillStyle = '#10141a'; g.fillRect(0, 0, 128, 140); g.fillStyle = '#cfd6de'; g.font = 'bold 20px Arial'; g.textAlign = 'center';
+    ['1', '2', '3', '4', '5', '6', '7', '8', '9', '*', '0', '#'].forEach((k, i) => {
+      const x = 22 + (i % 3) * 42, y = 8 + Math.floor(i / 3) * 33;
+      g.fillStyle = '#2a323d'; g.fillRect(x - 16, y, 32, 26); g.fillStyle = '#e6ebf0'; g.fillText(k, x, y + 20);
+    });
+  })
+}));
+kpFace.position.set(KEYPAD.x, 1.39, -hd + 0.085); scene.add(kpFace);
+const kpLampMat = new THREE.MeshBasicMaterial({ color: 0xff3b3b });
+box(0.2, 0.05, 0.02, kpLampMat, KEYPAD.x, 1.63, -hd + 0.085);
+
+// ── note / bundle materials
+const paperSide = std(0xe9e4d4, { roughness: 0.9 });
+const noteMats = {}, bundleMats = {}, stackMats = {};
+DENOMS.forEach(d => {
+  // light tint so the three denominations stay easy to tell apart from a distance
+  const tint = new THREE.Color(0xd8d8d8).lerp(new THREE.Color(COLORS[d]), 0.3).getHex();
+  const edge = std(new THREE.Color(COLORS[d]).lerp(new THREE.Color(0xf0ead8), 0.45).getHex(), { roughness: 0.9 });
+  const top = std(tint, { map: noteTex(d, false), roughness: 0.85 });
+  noteMats[d] = [edge, edge, top, top, edge, edge];
+  // bundle = thick stack of notes: full note on top, paper edges on the sides, two rubber bands around it
+  const btop = std(0xeeeeee, { map: noteTex(d, true), roughness: 0.85 });
+  const bend = std(0xffffff, { map: edgeTex(d, false), roughness: 0.95 });
+  const blong = std(0xffffff, { map: edgeTex(d, true), roughness: 0.95 });
+  bundleMats[d] = [bend, bend, btop, btop, blong, blong];
+  noteMats[d] = [bend, bend, top, top, bend, bend];
+  // counted stack straight from the sorter: same pile of notes, no label and no bands yet
+  const stop = std(0xeeeeee, { map: noteTex(d, false), roughness: 0.85 });
+  stackMats[d] = [bend, bend, stop, stop, bend, bend];
+});
+
+// ── a roll of 100 coins: paper wrap with the value printed on it, a coin showing at each end
+const rollGeo = new THREE.CylinderGeometry(0.062, 0.062, 0.56, 20); rollGeo.rotateZ(Math.PI / 2);
+const rollWrap = std(0xffffff, { roughness: 0.9, map: canvasTex(256, 256, (g, w, h) => {
+  g.fillStyle = '#c9a36b'; g.fillRect(0, 0, w, h);
+  g.fillStyle = '#8f98a3'; g.fillRect(0, 0, w, 26); g.fillRect(0, h - 26, w, 26);      // metal showing at both ends
+  g.strokeStyle = 'rgba(0,0,0,.25)'; g.lineWidth = 2; for (let y = 4; y < 26; y += 5) { g.beginPath(); g.moveTo(0, y); g.lineTo(w, y); g.moveTo(0, h - y); g.lineTo(w, h - y); g.stroke(); }
+  g.fillStyle = '#f4ecd8'; g.fillRect(0, 70, w, 116);
+  g.save(); g.translate(w / 2, h / 2); g.rotate(Math.PI / 2); g.direction = 'rtl';
+  g.fillStyle = '#2a2a2a'; g.textAlign = 'center'; g.textBaseline = 'middle';
+  for (let i = -1; i <= 1; i += 2) { g.save(); g.translate(0, i * 64); g.font = 'bold 30px Arial'; g.fillText('100 جنيه', 0, -14); g.font = '18px Arial'; g.fillText('100 × 1', 0, 16); g.restore(); }
+  g.restore();
+}) });
+const rollCap = std(0xffffff, { map: coinTex(), roughness: 0.35, metalness: 0.45 });
+const rollMats = [rollWrap, rollCap, rollCap];
+// ── a counted stack of 100 coins: bare coins piled in columns, milled edges showing, one coin leaning against them
+function mergeGeos(parts) {                             // [[geometry, matrix], ...] -> one geometry, grouped by material slot
+  const buckets = [];
+  for (const [geo, m] of parts) {
+    const g = geo.clone().applyMatrix4(m).toNonIndexed(), P = g.attributes.position.array, N = g.attributes.normal.array, U = g.attributes.uv.array;
+    for (const grp of g.groups) {
+      const b = buckets[grp.materialIndex] || (buckets[grp.materialIndex] = { p: [], n: [], u: [] });
+      for (let i = grp.start; i < grp.start + grp.count; i++) { b.p.push(P[i * 3], P[i * 3 + 1], P[i * 3 + 2]); b.n.push(N[i * 3], N[i * 3 + 1], N[i * 3 + 2]); b.u.push(U[i * 2], U[i * 2 + 1]); }
+    }
+  }
+  const out = new THREE.BufferGeometry(), p = [], n = [], u = []; let start = 0;
+  buckets.forEach((b, mi) => { if (!b) return; p.push(...b.p); n.push(...b.n); u.push(...b.u); out.addGroup(start, b.p.length / 3, mi); start += b.p.length / 3; });
+  out.setAttribute('position', new THREE.Float32BufferAttribute(p, 3)); out.setAttribute('normal', new THREE.Float32BufferAttribute(n, 3)); out.setAttribute('uv', new THREE.Float32BufferAttribute(u, 2));
+  return out;
+}
+const coinStackGeo = (() => {
+  const M = (x, y, z, rx = 0, ry = 0) => new THREE.Matrix4().compose(new THREE.Vector3(x, y, z), new THREE.Quaternion().setFromEuler(new THREE.Euler(rx, ry, 0)), new THREE.Vector3(1, 1, 1));
+  const col = h => new THREE.CylinderGeometry(0.06, 0.06, h, 24), one = new THREE.CylinderGeometry(0.06, 0.06, 0.011, 24);
+  return mergeGeos([
+    [col(0.176), M(-0.25, 0, -0.03, 0, 0.4)], [col(0.165), M(-0.125, -0.0055, -0.04, 0, 1.3)], [col(0.176), M(0, 0, -0.03, 0, 2.1)],
+    [col(0.154), M(0.125, -0.011, -0.04, 0, 0.9)], [col(0.176), M(0.25, 0, -0.03, 0, 2.8)],
+    [one, M(0.06, -0.032, 0.058, 1.2, 0.25)]            // the coin leaning against the columns, face out
+  ]);
+})();
+const coinEdge = std(0xffffff, { roughness: 0.3, metalness: 0.75, map: canvasTex(256, 128, (g, w, h) => {
+  const grad = g.createLinearGradient(0, 0, w, 0); grad.addColorStop(0, '#9da3ab'); grad.addColorStop(0.5, '#e4e7ea'); grad.addColorStop(1, '#9da3ab');
+  g.fillStyle = grad; g.fillRect(0, 0, w, h);
+  g.strokeStyle = 'rgba(40,44,50,.28)'; g.lineWidth = 1; for (let x = 0; x < w; x += 3) { g.beginPath(); g.moveTo(x, 0); g.lineTo(x, h); g.stroke(); }   // milled ridges
+  g.strokeStyle = 'rgba(30,33,38,.75)'; g.lineWidth = 2.2; for (let i = 0; i <= 16; i++) { const y = i * h / 16; g.beginPath(); g.moveTo(0, y); g.lineTo(w, y); g.stroke(); }   // gaps between coins
+  g.strokeStyle = 'rgba(255,255,255,.5)'; g.lineWidth = 1; for (let i = 0; i < 16; i++) { const y = i * h / 16 + 2.5; g.beginPath(); g.moveTo(0, y); g.lineTo(w, y); g.stroke(); }
+}) });
+const coinStackMats = [coinEdge, rollCap, rollCap];
+// the coins being counted towards the next roll, shown as a growing stack on the coin machine
+const coinStackMesh = new THREE.Mesh(coinStackGeo, coinStackMats); coinStackMesh.visible = false;
+coinStackMesh.position.set(COINER.x - 0.95, 1.05, COINER.z + 0.57); scene.add(coinStackMesh);
+
+// ── shelves in the vault
+const shelves = {};
+const bundleGeo = new THREE.BoxGeometry(0.6, 0.18, 0.28);   // big, chunky bundles
+const dummy = new THREE.Object3D();
+function slotPos(i) {                                   // local position of bundle i on a shelf unit
+  const s = Math.floor(i / 36), r = i % 36, layer = Math.floor(r / 18), r2 = r % 18;   // 15 shelves x (2 high x 3 deep x 6 wide)
+  const row = Math.floor(r2 / 6), col = r2 % 6;
+  return [-1.6 + col * 0.64, 0.25 + s * 0.5 + 0.02 + 0.09 + layer * 0.18, 0.3 - row * 0.3];
+}
+const units = [];                                       // every shelf unit; it has no denomination until the player gives it one
+function makeShelf(x, z, rotY) {
+  const g = new THREE.Group(); g.position.set(x, 0, z); g.rotation.y = rotY; scene.add(g);
+  for (let s = 0; s <= 15; s++) box(4, 0.04, 0.95, steelMat, 0, 0.25 + s * 0.5, 0, g);
+  [-2, -0.67, 0.67, 2].forEach(px => box(0.05, 7.8, 0.95, darkSteel, px, 3.9, 0, g));
+  box(4, 7.8, 0.03, darkSteel, 0, 3.9, -0.475, g);
+  const sign = new THREE.Mesh(new THREE.PlaneGeometry(1.8, 0.45), new THREE.MeshBasicMaterial({ map: labelTex('رف فاضي', '#39414d', '#c9d1db') }));
+  sign.position.set(0, 8.25, -0.3); sign.scale.set(1.6, 1.6, 1); g.add(sign);
+  g.updateMatrixWorld(true);
+  units.push({ group: g, sign, inst: null, denom: null, count: 0, n: units.length + 1 });
+  if (rotY === 0) addObs(x - 2.1, x + 2.1, z - 0.5, z + 0.5); else addObs(x - 0.5, x + 0.5, z - 2.1, z + 2.1);
+}
+function assignUnit(u, denom) {                         // the player decided this unit holds this denomination
+  if (u.inst) { u.group.remove(u.inst); u.inst = null; }
+  u.denom = denom;
+  u.sign.material.map = labelTex(denom === 1 ? 'جنيه معدن' : 'فئة ' + denom + ' جنيه', COLORS[denom], '#ffffff'); u.sign.material.needsUpdate = true;
+  const inst = new THREE.InstancedMesh(denom === 1 ? rollGeo : bundleGeo, denom === 1 ? rollMats : bundleMats[denom], UNIT_CAP);
+  for (let i = 0; i < UNIT_CAP; i++) {
+    const [px, py, pz] = slotPos(i);
+    dummy.position.set(px, py, pz); dummy.rotation.set(0, (Math.random() - 0.5) * 0.06, 0); dummy.scale.set(1, 1, 1);
+    dummy.updateMatrix(); inst.setMatrixAt(i, dummy.matrix);
+  }
+  inst.count = 0; inst.frustumCulled = false; u.group.add(inst); u.inst = inst;
+}
+// 20 tall shelf units, all empty: six on the back wall, seven on each side
+[-10.5, -6.3, -2.1, 2.1, 6.3, 10.5].forEach(x => makeShelf(x, VAULT.z1 + 0.5, 0));
+for (let k = 0; k < 7; k++) makeShelf(-VAULT.hw + 0.5, -20 - k * 4.1, Math.PI / 2);
+for (let k = 0; k < 7; k++) makeShelf(VAULT.hw - 0.5, -20 - k * 4.1, -Math.PI / 2);
+
+// ── bundles coming out of the banding machine (stacked on its table while it runs)
+const OUT_CAP = 48;                                     // most stacks drawn on one table (7 layers)
+function makeOut(M, mats) {
+  const o = { M, inst: {}, total: 0, clearAt: 0 };
+  DENOMS.forEach(d => {
+    const special = d === 1 && (mats.roll || mats.coinStack);
+    const m = new THREE.InstancedMesh(special ? (mats.roll ? rollGeo : coinStackGeo) : bundleGeo, special ? (mats.roll ? rollMats : coinStackMats) : mats[d], OUT_CAP);
+    m.count = 0; m.frustumCulled = false; scene.add(m); o.inst[d] = m;
+  });
+  return o;
+}
+function outAdd(o, d) {
+  o.made = (o.made || 0) + 1;                           // real count, even when the table can't show more
+  if (o.total >= OUT_CAP) return;
+  const i = o.total++, layer = Math.floor(i / 8), r = i % 8, row = Math.floor(r / 2), col = r % 2;
+  dummy.position.set(o.M.x + 0.55 + col * 0.64, 0.96 + 0.09 + layer * 0.18, o.M.z - 0.48 + row * 0.32);
+  dummy.rotation.set(0, ((i * 37 % 11) / 11 - 0.5) * 0.12, 0); dummy.scale.set(1, 1, 1); dummy.updateMatrix();
+  const m = o.inst[d]; m.setMatrixAt(m.count++, dummy.matrix); m.instanceMatrix.needsUpdate = true;
+}
+function outClear(o) { o.total = 0; o.made = 0; DENOMS.forEach(d => o.inst[d].count = 0); }
+const sortOut = makeOut(MACHINE, Object.assign({ coinStack: true }, stackMats));            // counted stacks waiting on the sorter
+const packOut = makeOut(PACKER, bundleMats);            // finished bundles coming out of the packer
+const coinOut = makeOut(COINER, Object.assign({ roll: true }, bundleMats));   // coin rolls coming out of the coin machine
+function drawTray() { outClear(sortOut); DENOMS.forEach(d => { for (let i = 0; i < tray[d]; i++) outAdd(sortOut, d); }); }
+const readyOut = makeOut(READY, bundleMats);            // bundles the belt has finished, waiting to be carried to the safe
+function drawReady() { outClear(readyOut); NOTE_DENOMS.forEach(d => { for (let i = 0; i < Math.min(ready[d], OUT_CAP); i++) outAdd(readyOut, d); }); }
+
+// ── the money pyramid: 800,000 single sheets, stacked in columns
+// Every sheet is real and is taken one at a time from the top of the column you aim at. Only the top few
+// sheets of each column are drawn loose; the rest of the column is drawn as one solid block of paper.
+const BW = 0.8, BD = 0.36;
+const flatGeo = new THREE.PlaneGeometry(BW, BD); flatGeo.rotateX(-Math.PI / 2);
+const ZERO = new THREE.Matrix4().makeScale(0, 0, 0);
+const PILE = { cell: 0.5, n: 52, t: 0.003, x: 0, z: 2, top: 12 };   // the heap sits in the middle of the room   // column size, columns per side, sheet thickness, centre z, loose sheets drawn per column
+const NCOL = PILE.n * PILE.n, PHALF = PILE.n * PILE.cell / 2;
+const colCount = new Int32Array(NCOL), colBase = new Int32Array(NCOL);
+const DPAT = (() => {                                   // the 97-piece mix, spread out evenly so every handful is mixed
+  const n = NOTE_DENOMS.reduce((a, d) => a + MIX[d], 0), owed = zeroes(), out = [];
+  for (let i = 0; i < n; i++) {
+    NOTE_DENOMS.forEach(d => owed[d] += MIX[d] / n);
+    const d = NOTE_DENOMS.reduce((a, b) => owed[b] > owed[a] ? b : a); owed[d] -= 1; out.push(d);
+  }
+  return out;
+})();
+const denomOf = (c, k) => DPAT[(colBase[c] + k) % DPAT.length];
+const colX = c => PILE.x - PHALF + (c % PILE.n + 0.5) * PILE.cell;
+const colZ = c => PILE.z - PHALF + (Math.floor(c / PILE.n) + 0.5) * PILE.cell;
+const colAt = (x, z) => {
+  const i = Math.floor((x - PILE.x + PHALF) / PILE.cell), j = Math.floor((z - PILE.z + PHALF) / PILE.cell);
+  return (i < 0 || j < 0 || i >= PILE.n || j >= PILE.n) ? -1 : j * PILE.n + i;
+};
+const rnd = (c, k, q) => { const v = Math.sin(c * 12.9898 + k * 78.233 + q * 37.719) * 43758.5453; return v - Math.floor(v); };
+const pcCoin = new Int32Array(NCOL);                    // coins lying on top of each column, mixed in with the notes
+(function fillPile() {                                  // money dumped at random in the middle of the room: heaps of different sizes run into each other
+  const rr = (a, b) => a + Math.random() * (b - a), R = () => Math.random() * Math.PI * 2;
+  const mounds = [];
+  const add = (count, spread, hMin, hMax, rMin, rMax) => { for (let i = 0; i < count; i++) {
+    const a = R(), dist = Math.sqrt(Math.random()) * spread;
+    mounds.push({ x: PILE.x + Math.cos(a) * dist, z: PILE.z + Math.sin(a) * dist, h: rr(hMin, hMax), r: rr(rMin, rMax),
+      rot: R(), stretch: rr(0.7, 1.45), pow: rr(0.9, 1.5), p1: R(), p2: R(), w1: rr(0.1, 0.28), w2: rr(0.05, 0.16) });
+  } };
+  add(1, 3.5, 1, 1, 8.5, 10.5);                         // one main heap, off-centre
+  add(3 + Math.floor(Math.random() * 3), 8.5, 0.45, 0.85, 4.5, 7); // a few big side heaps
+  add(5 + Math.floor(Math.random() * 4), 11, 0.15, 0.4, 2.2, 3.8); // small heaps further out
+  const ph = [R(), R(), R(), R(), R(), R()];
+  const w = new Float64Array(NCOL); let wSum = 0;
+  for (let c = 0; c < NCOL; c++) {
+    const x = colX(c), z = colZ(c); let best = 0, total = 0;
+    for (const m of mounds) {
+      const dx = x - m.x, dz = z - m.z, cs = Math.cos(m.rot), sn = Math.sin(m.rot);
+      const lx = (dx * cs + dz * sn) * m.stretch, lz = (-dx * sn + dz * cs) / m.stretch, ang = Math.atan2(lz, lx);
+      const edge = m.r * (1 + m.w1 * Math.sin(3 * ang + m.p1) + m.w2 * Math.sin(7 * ang + m.p2));   // ragged outline, different for each heap
+      const v = m.h * Math.pow(Math.max(0, 1 - Math.hypot(lx, lz) / edge), m.pow);
+      best = Math.max(best, v); total += v;
+    }
+    let v = best + 0.3 * (total - best);                 // heaps pile onto each other where they overlap
+    v *= 1 + 0.3 * Math.sin(x * 0.7 + ph[0]) * Math.sin(z * 0.63 + ph[1]) + 0.22 * Math.sin(x * 1.7 + ph[2]) * Math.sin(z * 2.1 + ph[3])
+           + 0.07 * Math.sin(x * 4.3 + ph[4]) * Math.sin(z * 3.9 + ph[5]) + (Math.random() - 0.5) * 0.1;
+    // the heap must die away before the edge of its area, never stop at a straight line
+    const edgeDist = PHALF - Math.max(Math.abs(x - PILE.x), Math.abs(z - PILE.z));
+    v *= Math.pow(Math.min(1, Math.max(0, edgeDist - 0.4) / 4), 1.3);
+    if (v < 0.01) v = (Math.random() < 0.3 && edgeDist > 0.6) ? Math.random() * 0.012 : 0;   // stray money lying about between the heaps
+    w[c] = Math.max(0, v); wSum += w[c];
+  }
+  const maxCount = 8.0 / PILE.t;                        // keep the top below the ceiling
+  for (let pass = 0; pass < 80; pass++) {
+    let peak = 0; for (let c = 0; c < NCOL; c++) peak = Math.max(peak, w[c] / wSum * TOTAL_SHEETS);
+    if (peak <= maxCount) break;
+    wSum = 0;                                            // too tall: squash the whole shape a little (keeps its form, no flat top)
+    for (let c = 0; c < NCOL; c++) { w[c] = Math.pow(w[c], 0.94); wSum += w[c]; }
+  }
+  let used = 0;
+  for (let c = 0; c < NCOL; c++) { colCount[c] = Math.floor(w[c] / wSum * TOTAL_SHEETS); used += colCount[c]; }
+  // no cliffs: loose money cannot stand steeper than about 45 degrees, so let anything steeper slide down
+  const maxStep = Math.round(0.5 / PILE.t), N = PILE.n;
+  for (let round = 0; round < 4; round++) {
+    for (let sweep = 0; sweep < 60; sweep++) {
+      let changed = false;
+      for (let c = 0; c < NCOL; c++) {
+        const i = c % N, j = Math.floor(c / N);
+        let low = 0;                                      // outside the area counts as bare floor
+        if (i > 0 && i < N - 1 && j > 0 && j < N - 1) low = Math.min(colCount[c - 1], colCount[c + 1], colCount[c - N], colCount[c + N]);
+        if (colCount[c] > low + maxStep) { colCount[c] = low + maxStep; changed = true; }
+      }
+      if (!changed) break;
+    }
+    used = 0; for (let c = 0; c < NCOL; c++) used += colCount[c];
+    if (round === 3 || used >= TOTAL_SHEETS * 0.999) break;
+    const grow = Math.min(TOTAL_SHEETS / used, 1.6), cap = Math.floor(maxCount);   // what slid away is spread back over the whole heap
+    used = 0; for (let c = 0; c < NCOL; c++) { colCount[c] = Math.min(cap, Math.floor(colCount[c] * grow)); used += colCount[c]; }
+  }
+  for (let c = 0, guard = 0; used < TOTAL_SHEETS && guard < 5e7; c = (c + 7) % NCOL, guard++) { if (colCount[c] > 0) { colCount[c]++; used++; } }
+  for (let c = 0, guard = 0; used > TOTAL_SHEETS && guard < 5e7; c = (c + 7) % NCOL, guard++) { if (colCount[c] > 1) { colCount[c]--; used--; } }
+  for (let c = 1; c < NCOL; c++) colBase[c] = colBase[c - 1] + colCount[c - 1];
+  // the coins are thrown over the same heap at random: a few on most spots, a lot on some, none on others
+  const cw = new Float64Array(NCOL); let cSum = 0;
+  for (let c = 0; c < NCOL; c++) { cw[c] = colCount[c] > 0 ? Math.pow(Math.random(), 2.2) * (Math.random() < 0.85 ? 1 : 0) : (Math.random() < 0.04 ? Math.random() * 0.2 : 0); cSum += cw[c]; }
+  let cUsed = 0;
+  for (let c = 0; c < NCOL; c++) { pcCoin[c] = Math.floor(cw[c] / cSum * TOTAL_COINS); cUsed += pcCoin[c]; }
+  for (let c = 0; cUsed < TOTAL_COINS; c = (c + 11) % NCOL) { if (cw[c] > 0) { pcCoin[c]++; cUsed++; } }
+})();
+const coreGeo = new THREE.BoxGeometry(PILE.cell, 1, PILE.cell); coreGeo.translate(0, 0.5, 0);
+// The solid inside of the heap must never look like a plain block: wherever it shows, it is painted as more loose money.
+function collageTex(sources, count, pw, ph, round) {    // a seamless picture of many notes (or coins) thrown on top of each other
+  const S = 1024, t = canvasTex(S, S, g => { g.fillStyle = '#7d7563'; g.fillRect(0, 0, S, S); });
+  t.wrapS = t.wrapT = THREE.RepeatWrapping;
+  const imgs = []; let pending = sources.length;
+  const paint = () => {
+    const g = t.image.getContext('2d');
+    for (let n = 0; n < count; n++) {
+      const im = imgs[n % imgs.length], x = Math.random() * S, y = Math.random() * S, a = Math.random() * Math.PI * 2;
+      for (const ox of [-S, 0, S]) for (const oy of [-S, 0, S]) {       // repeat across the edges so the picture tiles
+        if (x + ox < -pw || x + ox > S + pw || y + oy < -pw || y + oy > S + pw) continue;
+        g.save(); g.translate(x + ox, y + oy); g.rotate(a);
+        g.shadowColor = 'rgba(0,0,0,.5)'; g.shadowBlur = 7; g.shadowOffsetX = 2; g.shadowOffsetY = 3;
+        if (round) {
+          g.fillStyle = '#6d7178'; g.beginPath(); g.arc(0, 0, pw / 2, 0, Math.PI * 2); g.fill();
+          g.shadowColor = 'transparent'; g.clip(); g.drawImage(im, -pw * 0.51, -pw * 0.51, pw * 1.02, pw * 1.02);
+        } else { g.fillStyle = '#e8e2d2'; g.fillRect(-pw / 2, -ph / 2, pw, ph); g.shadowColor = 'transparent'; g.drawImage(im, -pw / 2, -ph / 2, pw, ph); }
+        g.restore();
+      }
+    }
+    t.needsUpdate = true;
+  };
+  sources.forEach((src, i) => { const im = new Image(); im.onload = () => { imgs[i] = im; if (--pending === 0) paint(); }; im.src = src; });
+  return t;
+}
+function heapMaterial(tex, uvPerMetre) {                // paints by position in the room, so it never stretches however tall a column is
+  const m = std(0xd2d2d2, { map: tex, roughness: 0.9 });
+  m.onBeforeCompile = sh => {
+    sh.vertexShader = sh.vertexShader.replace('#include <project_vertex>', `#include <project_vertex>
+      #ifdef USE_INSTANCING
+        vec4 heapPos = modelMatrix * instanceMatrix * vec4( transformed, 1.0 );
+      #else
+        vec4 heapPos = modelMatrix * vec4( transformed, 1.0 );
+      #endif
+      vUv = ( abs( normal.y ) > 0.5 ? heapPos.xz : vec2( heapPos.x + heapPos.z, heapPos.y ) ) * ${uvPerMetre.toFixed(3)};`);
+  };
+  return m;
+}
+const IMGS = window.NOTE_IMAGES || {};
+const noteHeapMat = heapMaterial(collageTex(NOTE_DENOMS.filter(d => IMGS[d]).map(d => IMGS[d]), 330, 250, 112, false), 0.3);
+const coinHeapMat = heapMaterial(collageTex(IMGS[1] ? [IMGS[1]] : [], 1100, 100, 100, true), 1.2);
+const coreInst = new THREE.InstancedMesh(coreGeo, noteHeapMat, NCOL);
+coreInst.frustumCulled = false; scene.add(coreInst);
+const COIN_R = 0.06;                                    // small next to a banknote, like the real thing
+const coinGeo = new THREE.CylinderGeometry(COIN_R, COIN_R, 0.011, 28);
+const coinFace = std(0xffffff, { map: coinTex(), roughness: 0.35, metalness: 0.45 });
+const coinMat = [std(0xaab0b8, { roughness: 0.3, metalness: 0.8 }), coinFace, coinFace];   // milled edge, then the two faces
+// banknotes are soft paper: a gently waved, curled sheet instead of a stiff flat card
+const paperGeo = new THREE.PlaneGeometry(BW, BD, 14, 5); paperGeo.rotateX(-Math.PI / 2);
+(() => {
+  const p = paperGeo.attributes.position;
+  for (let i = 0; i < p.count; i++) {
+    const u = p.getX(i) / (BW / 2), v = p.getZ(i) / (BD / 2);          // -1..1 along the length and across the width
+    const wave = 0.022 * Math.sin(u * 2.3 + 0.6) + 0.012 * Math.sin(u * 5.1 + v * 1.7);   // long lazy wave + a small ripple
+    const curl = 0.035 * Math.pow(Math.max(0, Math.abs(u) - 0.45) / 0.55, 2) * (u > 0 ? 1 : 0.55);   // the ends lift, one more than the other
+    const sag = 0.012 * v * v * Math.cos(u * 1.4);                    // slight cupping across the width
+    p.setY(i, wave + curl + sag);
+  }
+  paperGeo.computeVertexNormals();
+})();
+// What lies loose on top of every column. Notes show up either as a wad (a tumbled bunch of notes, like a dumped heap of
+// cash) or as a single curled sheet; coins as coins. Index into pieceMesh = denomination index * 2 + (1 for a single sheet).
+const wadGeo = new THREE.BoxGeometry(0.62, 0.05, 0.27);
+const pieceMesh = [];
+DENOMS.forEach((d, di) => {
+  const mk = (geo, mat) => { const m = new THREE.InstancedMesh(geo, mat, NCOL * PILE.top); m.frustumCulled = false; scene.add(m); return m; };
+  if (d === 1) { pieceMesh[di * 2] = pieceMesh[di * 2 + 1] = mk(coinGeo, coinMat); return; }
+  noteMats[d][2].side = THREE.DoubleSide;               // a curled note shows its underside too
+  pieceMesh[di * 2] = mk(wadGeo, noteMats[d]); pieceMesh[di * 2 + 1] = mk(paperGeo, noteMats[d][2]);
+});
+const slotMesh = new Int8Array(NCOL * PILE.top).fill(-1), dirtyMeshes = new Set();
+const pieceKind = (c, k) => { const d = denomOf(c, k); return d === 1 ? 2 : 1; };   // every note lies there as a single sheet (1); 2 = coin
+const hAt = (i, j) => (i < 0 || j < 0 || i >= PILE.n || j >= PILE.n) ? 0 : colCount[j * PILE.n + i] * PILE.t;
+const UP = new THREE.Vector3(0, 1, 0), NRM = new THREE.Vector3(), QN = new THREE.Quaternion(), QS = new THREE.Quaternion();
+function topSheetPose(c, k, j) {                        // where loose piece number k of column c lies (j = 0 is the top one)
+  // pieces lie on the slope of the heap, thrown down at all angles, so it looks tipped out rather than stacked
+  const kind = pieceKind(c, k), ci = c % PILE.n, cj = Math.floor(c / PILE.n), h = colCount[c] * PILE.t, GMAX = 1.7;
+  let gx = (hAt(ci + 1, cj) - hAt(ci - 1, cj)) / (2 * PILE.cell), gz = (hAt(ci, cj + 1) - hAt(ci, cj - 1)) / (2 * PILE.cell);
+  const gl = Math.hypot(gx, gz); if (gl > GMAX) { gx *= GMAX / gl; gz *= GMAX / gl; }
+  const ox = (rnd(c, k, 1) - 0.5) * 0.75, oz = (rnd(c, k, 2) - 0.5) * 0.75, up = PILE.top - 1 - j;
+  const wob = kind === 2 ? 0.18 : kind === 1 ? 0.5 : 1.15;   // wads tumble the most, coins lie flattest
+  NRM.set(-gx + (rnd(c, k, 4) - 0.5) * wob, 1, -gz + (rnd(c, k, 5) - 0.5) * wob).normalize();
+  QN.setFromUnitVectors(UP, NRM); QS.setFromAxisAngle(UP, rnd(c, k, 3) * Math.PI * 2);
+  const lift = Math.min(gl, GMAX) * PILE.cell * 0.5 + (kind === 0 ? 0.05 + up * 0.022 : 0.012 + up * 0.012);
+  dummy.position.set(colX(c) + ox, Math.max(0.006 + up * 0.006 + (kind === 0 ? 0.03 : 0), h + gx * ox + gz * oz + lift), colZ(c) + oz);
+  dummy.quaternion.copy(QN).multiply(QS);
+  if (kind === 0) { const sz = 0.85 + rnd(c, k, 6) * 0.3; dummy.scale.set(sz, 0.6 + rnd(c, k, 7) * 1.3, sz); }       // wads of different thickness
+  else if (kind === 1) dummy.scale.set(1, (0.5 + rnd(c, k, 6) * 1.5) * (rnd(c, k, 7) < 0.3 ? -1 : 1), 1);            // each sheet bent differently
+  else dummy.scale.set(1, 1, 1);
+  dummy.updateMatrix();
+  return kind;
+}
+const COIN_TOP = 5;                                     // most coins drawn on one spot (the rest are underneath them)
+const coinTopMesh = new THREE.InstancedMesh(coinGeo, coinMat, NCOL * COIN_TOP); coinTopMesh.frustumCulled = false; scene.add(coinTopMesh);
+function coinTopPose(c, j) {                            // where visible coin j of column c lies: on top of the loose notes
+  const ci = c % PILE.n, cj = Math.floor(c / PILE.n), h = colCount[c] * PILE.t, GMAX = 1.7;
+  let gx = (hAt(ci + 1, cj) - hAt(ci - 1, cj)) / (2 * PILE.cell), gz = (hAt(ci, cj + 1) - hAt(ci, cj - 1)) / (2 * PILE.cell);
+  const gl = Math.hypot(gx, gz); if (gl > GMAX) { gx *= GMAX / gl; gz *= GMAX / gl; }
+  const ox = (rnd(c, j, 21) - 0.5) * 0.85, oz = (rnd(c, j, 22) - 0.5) * 0.85;
+  NRM.set(-gx + (rnd(c, j, 24) - 0.5) * 0.3, 1, -gz + (rnd(c, j, 25) - 0.5) * 0.3).normalize();
+  QN.setFromUnitVectors(UP, NRM); QS.setFromAxisAngle(UP, rnd(c, j, 23) * Math.PI * 2);
+  const lift = Math.min(gl, GMAX) * PILE.cell * 0.5 + (colCount[c] > 0 ? 0.03 + Math.min(colCount[c], PILE.top) * 0.012 : 0.008) + j * 0.004;
+  dummy.position.set(colX(c) + ox, Math.max(0.008 + j * 0.004, h + gx * ox + gz * oz + lift), colZ(c) + oz);
+  dummy.quaternion.copy(QN).multiply(QS); dummy.scale.set(1, 1, 1); dummy.updateMatrix();
+}
+function updateCol(c) {
+  for (let j = 0; j < COIN_TOP; j++) {
+    if (j < pcCoin[c]) { coinTopPose(c, j); coinTopMesh.setMatrixAt(c * COIN_TOP + j, dummy.matrix); }
+    else coinTopMesh.setMatrixAt(c * COIN_TOP + j, ZERO);
+  }
+  const k = colCount[c];
+  dummy.position.set(colX(c), 0, colZ(c)); dummy.rotation.set(0, 0, 0);
+  // thin scatterings are drawn as loose pieces only; the solid block appears once there is a real depth of money
+  if (k * PILE.t > 0.16) dummy.scale.set(1, k * PILE.t - 0.05, 1); else dummy.scale.set(0, 0, 0);
+  dummy.updateMatrix(); coreInst.setMatrixAt(c, dummy.matrix);
+  for (let j = 0; j < PILE.top; j++) {
+    const sIdx = k - 1 - j, slot = c * PILE.top + j, was = slotMesh[slot];
+    let now = -1;
+    if (sIdx >= 0) { const kind = topSheetPose(c, sIdx, j); now = DENOMS.indexOf(denomOf(c, sIdx)) * 2 + (kind === 1 ? 1 : 0); }
+    if (was >= 0 && was !== now) { pieceMesh[was].setMatrixAt(slot, ZERO); dirtyMeshes.add(was); }
+    if (now >= 0) { pieceMesh[now].setMatrixAt(slot, dummy.matrix); dirtyMeshes.add(now); }
+    slotMesh[slot] = now;
+  }
+}
+function updateAround(c) {                              // a column and the four next to it (their slope depends on it)
+  updateCol(c);
+  const ci = c % PILE.n, cj = Math.floor(c / PILE.n);
+  if (ci > 0) updateCol(c - 1); if (ci < PILE.n - 1) updateCol(c + 1);
+  if (cj > 0) updateCol(c - PILE.n); if (cj < PILE.n - 1) updateCol(c + PILE.n);
+}
+function flushPile() {
+  coreInst.instanceMatrix.needsUpdate = true; coinTopMesh.instanceMatrix.needsUpdate = true;
+  dirtyMeshes.forEach(i => pieceMesh[i].instanceMatrix.needsUpdate = true); dirtyMeshes.clear();
+  refreshGold();
+}
+// gold bars buried in the heap: each shows up once its column has been dug down far enough
+const goldInst = new THREE.InstancedMesh(new THREE.BoxGeometry(0.3, 0.1, 0.14), std(0xf2c230, { metalness: 0.9, roughness: 0.25, emissive: 0x4a3500 }), GOLD_BARS);
+goldInst.frustumCulled = false; scene.add(goldInst);
+function placeGold() {
+  gold.length = 0; const deep = [];
+  for (let c = 0; c < NCOL; c++) if (colCount[c] > 500) deep.push(c);
+  for (let i = 0; i < GOLD_BARS && deep.length; i++) { const c = deep.splice(Math.floor(Math.random() * deep.length), 1)[0]; gold.push({ c, thr: Math.floor(colCount[c] * (0.15 + Math.random() * 0.6)), taken: false }); }
+}
+const goldIdx = c => gold.findIndex(b => b.c === c && !b.taken && colCount[c] <= b.thr);
+function refreshGold() {
+  for (let i = 0; i < GOLD_BARS; i++) {
+    const b = gold[i];
+    if (b && !b.taken && colCount[b.c] <= b.thr) { dummy.position.set(colX(b.c), colCount[b.c] * PILE.t + 0.07, colZ(b.c)); dummy.rotation.set(0, rnd(b.c, 1, 9) * 3, 0); dummy.scale.set(1, 1, 1); dummy.updateMatrix(); goldInst.setMatrixAt(i, dummy.matrix); }
+    else goldInst.setMatrixAt(i, ZERO);
+  }
+  goldInst.instanceMatrix.needsUpdate = true;
+}
+function takeGold(i) {
+  gold[i].taken = true; goldFound++; bonus += GOLD_BONUS; refreshGold(); hudDirty = true; sfx.granted();
+  toast('لقيت سبيكة دهب! ' + fmt(GOLD_BONUS) + ' حوافز (' + goldFound + ' من ' + gold.length + ')', true); return true;
+}
+placeGold();
+for (let c = 0; c < NCOL; c++) updateCol(c);
+flushPile();
+// mark left on the floor where a column has been cleared completely
+const markMat = new THREE.MeshBasicMaterial({
+  transparent: true, depthWrite: false,
+  map: canvasTex(256, 116, (g, w, h) => {
+    g.clearRect(0, 0, w, h);
+    g.fillStyle = 'rgba(93,252,154,.10)'; g.fillRect(4, 4, w - 8, h - 8);
+    g.strokeStyle = 'rgba(93,252,154,.95)'; g.lineWidth = 6; g.setLineDash([18, 12]); g.strokeRect(6, 6, w - 12, h - 12);
+    g.setLineDash([]); g.lineWidth = 9; g.lineCap = 'round'; g.lineJoin = 'round';
+    g.beginPath(); g.moveTo(w / 2 - 26, h / 2 + 2); g.lineTo(w / 2 - 6, h / 2 + 22); g.lineTo(w / 2 + 30, h / 2 - 22); g.stroke();
+  })
+});
+const markInst = new THREE.InstancedMesh(flatGeo, markMat, NCOL);
+markInst.count = 0; markInst.frustumCulled = false; markInst.renderOrder = 1; scene.add(markInst);
+// columns higher than your knees block the way: you have to dig into the pyramid
+function pileBlocks(x, z) {
+  for (let ox = -0.3; ox <= 0.31; ox += 0.3) for (let oz = -0.3; oz <= 0.31; oz += 0.3) {
+    const c = colAt(x + ox, z + oz);
+    if (c >= 0 && colCount[c] * PILE.t > 0.45) return true;
+  }
+  return false;
+}
+let pilesLeft = TOTAL_SHEETS, aimed = -1, mouseHeld = false, collected = 0, holdAcc = 0, lastPickSfx = 0;
+const tier = () => { let t = BAG_TIERS[0]; for (const row of BAG_TIERS) if (collected >= row[0]) t = row; return t; };
+const bagCap = () => tier()[1] * BAG_MUL[up.bag];
+const grabSize = () => tier()[2];
+const pickRate = () => 11 * grabSize() * HAND_MUL[up.hands];   // single sheets per second while you hold the button down
+const carryCap = () => Math.max(MAX_BUNDLES, Math.ceil(bagCap() / 100), Math.ceil(coinCap() / 100)) * TROLLEY_MUL[up.trolley];
+// yellow frame around the sheet you are aiming at
+const aimMesh = new THREE.Mesh(flatGeo, new THREE.MeshBasicMaterial({
+  transparent: true, depthTest: false, depthWrite: false,
+  map: canvasTex(256, 116, (g, w, h) => {
+    g.clearRect(0, 0, w, h); g.fillStyle = 'rgba(255,221,87,.18)'; g.fillRect(0, 0, w, h);
+    g.strokeStyle = '#ffdd57'; g.lineWidth = 12; g.strokeRect(6, 6, w - 12, h - 12);
+  })
+}));
+aimMesh.renderOrder = 5; aimMesh.visible = false; scene.add(aimMesh);
+// ── the coin heap: 20,000 one-pound coins in a mound of their own, picked up coin by coin
+const CP = { cell: 0.3, n: 16, t: 0.004, x: 11.5, z: 4, top: 16 };
+const CN = CP.n * CP.n, CHALF = CP.n * CP.cell / 2, cpCount = new Int32Array(CN);
+const cpX = c => CP.x - CHALF + (c % CP.n + 0.5) * CP.cell, cpZ = c => CP.z - CHALF + (Math.floor(c / CP.n) + 0.5) * CP.cell;
+const cpAt = (x, z) => {
+  const i = Math.floor((x - CP.x + CHALF) / CP.cell), j = Math.floor((z - CP.z + CHALF) / CP.cell);
+  return (i < 0 || j < 0 || i >= CP.n || j >= CP.n) ? -1 : j * CP.n + i;
+};
+// (the separate coin mound is no longer used: coins lie on the main heap)
+const cpCoreGeo = new THREE.BoxGeometry(CP.cell, 1, CP.cell); cpCoreGeo.translate(0, 0.5, 0);
+const cpCore = new THREE.InstancedMesh(cpCoreGeo, coinHeapMat, CN);
+cpCore.frustumCulled = false; scene.add(cpCore);
+const cpCoins = new THREE.InstancedMesh(coinGeo, coinMat, CN * CP.top); cpCoins.frustumCulled = false; scene.add(cpCoins);
+const cpH = (i, j) => (i < 0 || j < 0 || i >= CP.n || j >= CP.n) ? 0 : cpCount[j * CP.n + i] * CP.t;
+function coinPose(c, k, j) {                            // where loose coin number k of column c lies (j = 0 is the top one)
+  const ci = c % CP.n, cj = Math.floor(c / CP.n), h = cpCount[c] * CP.t, up = CP.top - 1 - j;
+  let gx = (cpH(ci + 1, cj) - cpH(ci - 1, cj)) / (2 * CP.cell), gz = (cpH(ci, cj + 1) - cpH(ci, cj - 1)) / (2 * CP.cell);
+  const gl = Math.hypot(gx, gz); if (gl > 1.5) { gx *= 1.5 / gl; gz *= 1.5 / gl; }
+  const ox = (rnd(c, k, 11) - 0.5) * 0.46, oz = (rnd(c, k, 12) - 0.5) * 0.46;
+  NRM.set(-gx + (rnd(c, k, 14) - 0.5) * 0.7, 1, -gz + (rnd(c, k, 15) - 0.5) * 0.7).normalize();
+  QN.setFromUnitVectors(UP, NRM); QS.setFromAxisAngle(UP, rnd(c, k, 13) * Math.PI * 2);
+  dummy.position.set(cpX(c) + ox, Math.max(0.007 + up * 0.005, h + gx * ox + gz * oz + Math.min(gl, 1.5) * CP.cell * 0.5 + 0.008 + up * 0.006), cpZ(c) + oz);
+  dummy.quaternion.copy(QN).multiply(QS); dummy.scale.set(1, 1, 1); dummy.updateMatrix();
+}
+function updateCoinCol(c) {
+  const k = cpCount[c];
+  dummy.position.set(cpX(c), 0, cpZ(c)); dummy.rotation.set(0, 0, 0);
+  if (k * CP.t > 0.06) dummy.scale.set(1, k * CP.t - 0.02, 1); else dummy.scale.set(0, 0, 0);
+  dummy.updateMatrix(); cpCore.setMatrixAt(c, dummy.matrix);
+  for (let j = 0; j < CP.top; j++) {
+    if (k - 1 - j >= 0) { coinPose(c, k - 1 - j, j); cpCoins.setMatrixAt(c * CP.top + j, dummy.matrix); }
+    else cpCoins.setMatrixAt(c * CP.top + j, ZERO);
+  }
+}
+function updateCoinAround(c) {
+  updateCoinCol(c);
+  const ci = c % CP.n, cj = Math.floor(c / CP.n);
+  if (ci > 0) updateCoinCol(c - 1); if (ci < CP.n - 1) updateCoinCol(c + 1);
+  if (cj > 0) updateCoinCol(c - CP.n); if (cj < CP.n - 1) updateCoinCol(c + CP.n);
+}
+for (let c = 0; c < CN; c++) updateCoinCol(c);
+function coinBlocks(x, z) {
+  for (let ox = -0.3; ox <= 0.31; ox += 0.3) for (let oz = -0.3; oz <= 0.31; oz += 0.3) {
+    const c = cpAt(x + ox, z + oz);
+    if (c >= 0 && cpCount[c] * CP.t > 0.45) return true;
+  }
+  return false;
+}
+const coinTier = () => { let t = COIN_TIERS[0]; for (const row of COIN_TIERS) if (coinsCollected >= row[0]) t = row; return t; };
+const coinCap = () => coinTier()[1] * BAG_MUL[up.bag], coinGrab = () => coinTier()[2];
+
+// ── aiming and picking (notes and coins share the one heap)
+function findAimedAny() {                               // first spot of the heap the line of sight runs into: { c, coin } or null
+  const dy = Math.sin(player.pitch), cp = Math.cos(player.pitch);
+  const dx = -Math.sin(player.yaw) * cp, dz = -Math.cos(player.yaw) * cp;
+  for (let s = 0.15; s <= REACH; s += 0.04) {
+    const y = 1.7 + dy * s; if (y < -0.05) break;
+    const c = colAt(player.x + dx * s, player.z + dz * s);
+    if (c < 0) continue;
+    const gi = goldIdx(c);
+    if (gi >= 0 && y <= colCount[c] * PILE.t + 0.2) return { c, coin: false, gold: gi };
+    if ((colCount[c] > 0 || pcCoin[c] > 0) && y <= colCount[c] * PILE.t + 0.06)
+      return { c, coin: pcCoin[c] > 0 && (coinPouch < coinCap() || colCount[c] === 0), gold: -1 };   // coins lie on top, so they come first while the pouch has room
+  }
+  return null;
+}
+let aimedHit = null;
+function refreshAim() {
+  aimedHit = (pilesLeft > 0 || coinsLeft > 0 || goldFound < gold.length) ? findAimedAny() : null; aimed = aimedHit && !aimedHit.coin && aimedHit.gold < 0 ? aimedHit.c : -1;
+  aimMesh.visible = !!aimedHit;
+  if (!aimedHit) return;
+  if (aimedHit.gold >= 0) { const c = aimedHit.c; aimMesh.scale.set(0.5, 1, 0.6); aimMesh.position.set(colX(c), colCount[c] * PILE.t + 0.17, colZ(c)); aimMesh.quaternion.identity(); return; }
+  if (aimedHit.coin) { coinTopPose(aimedHit.c, 0); aimMesh.scale.set(0.19, 1, 0.42); }
+  else { topSheetPose(aimed, colCount[aimed] - 1, 0); aimMesh.scale.set(1.08, 1, 1.12); }
+  aimMesh.position.copy(dummy.position); aimMesh.position.y += 0.05; aimMesh.quaternion.copy(dummy.quaternion);
+}
+function aimPrompt() {
+  if (!aimedHit) return '';
+  if (aimedHit.gold >= 0) return '<kbd>كليك</kbd>خُد سبيكة الدهب (' + fmt(GOLD_BONUS) + ' حوافز)';
+  if (aimedHit.coin) {
+    const n = Math.min(coinGrab(), coinCap() - coinPouch, pcCoin[aimedHit.c]);
+    if (n <= 0) return 'كيس العملة مليان — ودّيه ماكينة لف العملة';
+    return '<kbd>كليك</kbd>' + (n > 1 ? 'لِمّ ' + n + ' جنيه معدن' : 'لِمّ الجنيه المعدن');
+  }
+  return '<kbd>كليك</kbd>لِمّ الورقة أم ' + denomOf(aimed, colCount[aimed] - 1) + ' جنيه';
+}
+function pickCoinsAt(c) {
+  const room = coinCap() - coinPouch;
+  if (room <= 0) {
+    if (elapsed - lastToast > 1.5) { toast('كيس العملة اتملى — ودّيه ماكينة لف العملة'); lastToast = elapsed; }
+    return false;
+  }
+  const tierBefore = coinTier();
+  let want = Math.min(coinGrab(), room), took = 0;
+  while (want > 0 && c >= 0) {                          // coin by coin; a bigger handful reaches onto the spots next to it
+    const n = Math.min(want, pcCoin[c]);
+    pcCoin[c] -= n; want -= n; took += n; updateCol(c);
+    if (want > 0) {
+      const ci = c % PILE.n, cj = Math.floor(c / PILE.n); let best = -1;
+      for (let dj = -1; dj <= 1; dj++) for (let di = -1; di <= 1; di++) {
+        const i = ci + di, j = cj + dj; if (i < 0 || j < 0 || i >= PILE.n || j >= PILE.n) continue;
+        const nb = j * PILE.n + i; if (pcCoin[nb] > 0 && (best < 0 || pcCoin[nb] > pcCoin[best])) best = nb;
+      }
+      c = best;
+    }
+  }
+  if (!took) return false;
+  flushPile(); coinPouch += took; coinsCollected += took; coinsLeft -= took; hudDirty = true; sfx.coin();
+  if (coinTier() !== tierBefore) { toast('كيس العملة كبر! بقى يشيل ' + fmt(coinCap()) + ' جنيه، وبتلمّ ' + coinGrab() + ' في الكليك', true); sfx.done(); }
+  return true;
+}
+function tryPick(notesOnly) {                           // notesOnly: used by the fast hold-stream, which must never sweep up coins
+  const hit = findAimedAny(); if (!hit) return false;
+  if (hit.gold >= 0) return notesOnly ? false : takeGold(hit.gold);
+  if (hit.coin) return notesOnly ? false : pickCoinsAt(hit.c);
+  let c = hit.c, room = bagCap() - sum(loose);
+  if (room <= 0) {
+    if (elapsed - lastToast > 1.5) { toast('الشنطة اتملت — ودّيها ماكينة الفرز والعد'); lastToast = elapsed; }
+    return false;
+  }
+  const tierBefore = tier();
+  let want = 1, took = 0;                               // always exactly one sheet
+  while (want > 0 && c >= 0) {
+    const n = Math.min(want, colCount[c]);
+    for (let i = 0; i < n; i++) loose[denomOf(c, colCount[c] - 1 - i)]++;
+    colCount[c] -= n; want -= n; took += n; updateAround(c);
+    if (colCount[c] === 0 && pcCoin[c] === 0) {
+      dummy.position.set(colX(c), 0.003, colZ(c)); dummy.rotation.set(0, rnd(c, 0, 3) * Math.PI, 0); dummy.scale.set(0.6, 1, 1.2); dummy.updateMatrix();
+      markInst.setMatrixAt(markInst.count++, dummy.matrix); markInst.instanceMatrix.needsUpdate = true;
+    }
+    if (want > 0) c = -1;
+  }
+  if (!took) return false;
+  flushPile(); pilesLeft -= took; collected += took; hudDirty = true; sfx.pick();
+  if (Math.random() * FAKE_ODDS < took) fakesInBag++;      // now and then a fake note comes up with the real ones
+  spawnFly(hit.c, denomOf(hit.c, colCount[hit.c]));
+  if (tier() !== tierBefore) {
+    toast('الشنطة كبرت! بقت تشيل ' + fmt(bagCap()) + ' ورقة، وإيدك بقت أسرع: ' + fmt(pickRate()) + ' ورقة في الثانية', true); sfx.done();
+  }
+  return true;
+}
+
+// ───────────────────────── Phase 2: thief, helper, guard, belt, shop, saving ─────────────────────────
+function markCleared(c) {
+  dummy.position.set(colX(c), 0.003, colZ(c)); dummy.rotation.set(0, rnd(c, 0, 3) * Math.PI, 0); dummy.scale.set(0.6, 1, 1.2); dummy.updateMatrix();
+  markInst.setMatrixAt(markInst.count++, dummy.matrix); markInst.instanceMatrix.needsUpdate = true;
+}
+function takeNotes(c, n, into) {                        // someone other than the player lifts the top n sheets of a column
+  n = Math.min(n, colCount[c]); if (n <= 0) return 0;
+  for (let i = 0; i < n; i++) into[denomOf(c, colCount[c] - 1 - i)]++;
+  colCount[c] -= n; pilesLeft -= n; updateAround(c);
+  if (colCount[c] === 0 && pcCoin[c] === 0) markCleared(c);
+  return n;
+}
+function nearestCol(x, z, min = 1) {                             // closest spot that still has notes on it (-1 = none left)
+  let best = -1, bd = 1e9;
+  for (let c = 0; c < NCOL; c++) if (colCount[c] >= min) { const d = (colX(c) - x) ** 2 + (colZ(c) - z) ** 2; if (d < bd) { bd = d; best = c; } }
+  return best < 0 && min > 1 ? nearestCol(x, z) : best;   // no deep money left: settle for the scatterings
+}
+function richestNear(x, z, rad) {                       // tallest column within arm's reach
+  const i0 = Math.floor((x - PILE.x + PHALF) / PILE.cell), j0 = Math.floor((z - PILE.z + PHALF) / PILE.cell); let best = -1;
+  for (let j = j0 - rad; j <= j0 + rad; j++) for (let i = i0 - rad; i <= i0 + rad; i++) {
+    if (i < 0 || j < 0 || i >= PILE.n || j >= PILE.n) continue;
+    const c = j * PILE.n + i; if (colCount[c] > 0 && (best < 0 || colCount[c] > colCount[best])) best = c;
+  }
+  return best;
+}
+function grabNotes(x, z, n, into) {
+  let took = 0;
+  while (n > 0) {
+    const c = richestNear(x, z, 3); if (c < 0) break;
+    const k = takeNotes(c, Math.min(n, Math.max(1, Math.ceil(colCount[c] * 0.25))), into); n -= k; took += k;
+  }
+  if (took) { flushPile(); hudDirty = true; }
+  return took;
+}
+// a simple walking figure
+function makePerson(body, legs, skin, hat) {
+  const g = new THREE.Group(), mat = c => std(c, { roughness: 0.8 });
+  const limb = (w, h, d, c, x, y) => {
+    const p = new THREE.Group(); p.position.set(x, y, 0);
+    const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat(c)); m.position.y = -h / 2; p.add(m); g.add(p); return p;
+  };
+  const legL = limb(0.17, 0.82, 0.19, legs, -0.11, 0.82), legR = limb(0.17, 0.82, 0.19, legs, 0.11, 0.82);
+  box(0.46, 0.62, 0.26, mat(body), 0, 1.13, 0, g);
+  const armL = limb(0.12, 0.6, 0.14, body, -0.3, 1.42), armR = limb(0.12, 0.6, 0.14, body, 0.3, 1.42);
+  const head = new THREE.Mesh(new THREE.SphereGeometry(0.15, 14, 12), mat(skin)); head.position.y = 1.6; g.add(head);
+  const cap = new THREE.Mesh(new THREE.CylinderGeometry(0.165, 0.175, 0.11, 14), mat(hat)); cap.position.y = 1.72; g.add(cap);
+  [-0.055, 0.055].forEach(x => box(0.035, 0.035, 0.02, mat(0x111111), x, 1.63, 0.14, g));        // eyes
+  box(0.5, 0.1, 0.3, mat(legs), 0, 0.84, 0, g);                                                  // belt
+  [-0.11, 0.11].forEach(x => box(0.19, 0.08, 0.3, mat(0x15171a), x, 0.04, 0.04, g));              // shoes
+  g.userData = { legL, legR, armL, armR, phase: 0 }; g.visible = false; scene.add(g);
+  return g;
+}
+function standPerson(g) { const u = g.userData; u.legL.rotation.x = u.legR.rotation.x = u.armL.rotation.x = u.armR.rotation.x = 0; }
+function movePerson(g, tx, tz, speed, dt) {             // walk towards a point; true once there
+  const dx = tx - g.position.x, dz = tz - g.position.z, d = Math.hypot(dx, dz), u = g.userData;
+  if (d < 0.05) { standPerson(g); return true; }
+  const s = Math.min(d, speed * dt);
+  g.position.x += dx / d * s; g.position.z += dz / d * s; g.rotation.y = Math.atan2(dx, dz);
+  u.phase += s * 3.2; const sw = Math.sin(u.phase) * 0.7;
+  u.legL.rotation.x = sw; u.legR.rotation.x = -sw; u.armL.rotation.x = -sw * 0.7; u.armR.rotation.x = sw * 0.7;
+  return d - s < 0.05;
+}
+function approach(g, c, speed, dt) {                    // walk up to a column of the heap and stop a step short of it
+  const dx = colX(c) - g.position.x, dz = colZ(c) - g.position.z, d = Math.hypot(dx, dz);
+  if (d <= 1) { standPerson(g); g.rotation.y = Math.atan2(dx, dz); return true; }
+  movePerson(g, colX(c) - dx / d * 0.95, colZ(c) - dz / d * 0.95, speed, dt); return false;
+}
+const digArms = g => { const u = g.userData; u.armL.rotation.x = -1.1 + Math.sin(elapsed * 14) * 0.5; u.armR.rotation.x = -1.1 - Math.sin(elapsed * 14) * 0.5; };
+
+// ── a picked note flies from the heap into your bag
+const flies = [];
+for (let i = 0; i < 8; i++) { const m = new THREE.Mesh(flatGeo, noteMats[100][2]); m.visible = false; scene.add(m); flies.push({ m, t: 1, from: new THREE.Vector3() }); }
+function spawnFly(c, d) {
+  if (elapsed < flyAt) return; flyAt = elapsed + 0.05;
+  const f = flies.find(f => f.t >= 1); if (!f) return;
+  f.t = 0; f.m.material = noteMats[d][2]; f.from.set(colX(c), colCount[c] * PILE.t + 0.1, colZ(c)); f.m.visible = true;
+}
+function updateFlies(dt) {
+  for (const f of flies) {
+    if (f.t >= 1) continue;
+    f.t += dt / 0.22; if (f.t >= 1) { f.m.visible = false; continue; }
+    tmpV.set(player.x - Math.sin(player.yaw) * 0.25, 1.2, player.z - Math.cos(player.yaw) * 0.25);
+    f.m.position.lerpVectors(f.from, tmpV, f.t); f.m.position.y += Math.sin(f.t * Math.PI) * 0.35;
+    f.m.rotation.set(f.t * 5, f.t * 7, 0); const sc = 1 - f.t * 0.6; f.m.scale.set(sc, sc, sc);
+  }
+}
+const beltBoxes = []; for (let i = 0; i < 6; i++) beltBoxes.push(box(0.5, 0.16, 0.26, std(0xcfc8b4), 0, 4.58, -hd + 0.3, beltGroup));   // stacks riding the belt
+// skirting boards round the main room
+[[hw * 2, 0.12, 0, hd - 0.03], [hw - 1.45, 0.12, -(hw + 1.45) / 2, -hd + 0.03], [hw - 1.45, 0.12, (hw + 1.45) / 2, -hd + 0.03]].forEach(([w, d, x, z]) => box(w, 0.22, d, darkSteel, x, 0.11, z));
+[[-hw + 0.03], [hw - 0.03]].forEach(([x]) => box(0.12, 0.22, hd * 2, darkSteel, x, 0.11, 0));
+
+// ── the thief: comes in through the emergency door, fills a sack from the heap and runs back out
+const thief = { g: makePerson(0x1c1c1f, 0x26282d, 0xd9a57b, 0x101012), state: 'away', timer: 0, acc: 0, col: -1, loot: zeroes() };
+const sack = new THREE.Mesh(new THREE.SphereGeometry(0.3, 12, 10), std(0x8a6b3d, { roughness: 1 }));
+sack.position.set(0, 1.2, -0.32); sack.scale.set(1, 1.2, 0.8); sack.visible = false; thief.g.add(sack);
+const marker = new THREE.Mesh(new THREE.ConeGeometry(0.22, 0.5, 12), new THREE.MeshBasicMaterial({ color: 0xff2a2a, depthTest: false, transparent: true, opacity: 0.95 }));
+marker.rotation.x = Math.PI; marker.position.y = 2.5; marker.renderOrder = 6; thief.g.add(marker);      // red arrow over his head, seen even through the heap
+let nextThief = Infinity;
+const thiefActive = () => thief.state === 'in' || thief.state === 'steal' || thief.state === 'out';
+function scheduleThief(first) {
+  const T = THIEF[difficulty];
+  nextThief = !T ? Infinity : elapsed + (first ? T.first : T.gap[0] + Math.random() * (T.gap[1] - T.gap[0]));
+}
+function spawnThief() {
+  const c = pilesLeft > 0 ? nearestCol(TDOOR.x, TDOOR.z, 60) : -1;   // he heads for real depth of money, not the strays by the door
+  if (c < 0) { nextThief = Infinity; return; }           // nothing left on the floor worth stealing
+  thief.col = c; thief.state = 'in'; thief.acc = 0; thief.timer = THIEF[difficulty].time; thief.g.position.set(TDOOR.x, 0, TDOOR.z); thief.g.visible = true; sack.visible = false; marker.visible = true;
+  sirenAt = 0; hudDirty = true; toast('حرامي دخل من باب الطوارئ! اجري عليه قبل ما يهرب بالفلوس');
+}
+function catchThief(byGuard) {
+  const n = sum(thief.loot), v = value(thief.loot);
+  DENOMS.forEach(d => { loose[d] += thief.loot[d]; thief.loot[d] = 0; });      // what he took goes straight into your bag
+  thievesCaught++; if (!byGuard) bonus += 200;
+  thief.state = 'run'; sack.visible = false; marker.visible = false; hudDirty = true; sfx.granted();
+  toast(byGuard ? 'الحارس مسك الحرامي ورجّع ' + fmt(v) + ' جنيه في شنطتك'
+    : n ? 'مسكت الحرامي! رجّعت ' + fmt(n) + ' ورقة (' + fmt(v) + ' جنيه) في شنطتك، وخدت 200 جنيه حوافز'
+    : 'مسكت الحرامي قبل ما يسرق حاجة — خدت 200 جنيه حوافز', true);
+}
+function thiefEscaped() {
+  const v = value(thief.loot);
+  DENOMS.forEach(d => { stolen[d] += thief.loot[d]; thief.loot[d] = 0; });
+  thief.state = 'away'; thief.g.visible = false; scheduleThief(); hudDirty = true;
+  if (v) { thievesEscaped++; sfx.wrong(); toast('الحرامي هرب بـ' + fmt(v) + ' جنيه!'); }
+}
+function updateThief(dt) {
+  const T = THIEF[difficulty]; if (!T) return;
+  const th = thief, g = th.g;
+  if (th.state === 'away') { if (elapsed >= nextThief) spawnThief(); return; }
+  if (th.state !== 'run' && Math.hypot(player.x - g.position.x, player.z - g.position.z) < 1.9) catchThief(false);
+  if (th.state === 'in') {
+    if (th.col < 0 || colCount[th.col] <= 0) th.col = nearestCol(g.position.x, g.position.z, 60);
+    if (th.col < 0) th.state = 'out';
+    else if (approach(g, th.col, T.speed, dt)) th.state = 'steal';
+  } else if (th.state === 'steal') {
+    th.timer -= dt; th.acc += dt * Math.max(25, pilesLeft / 4000) * T.mul;
+    const n = Math.floor(th.acc); th.acc -= n;
+    const got = n > 0 ? grabNotes(g.position.x, g.position.z, n, th.loot) : 0;
+    sack.visible = sum(th.loot) > 0; digArms(g);
+    if (th.timer <= 0) th.state = 'out';
+    else if (n > 0 && !got) { th.col = -1; th.state = pilesLeft > 0 ? 'in' : 'out'; }
+  } else if (th.state === 'out') {
+    if (movePerson(g, TDOOR.x, TDOOR.z, T.flee, dt)) { if (up.guard && sum(th.loot) > 0) catchThief(true); else thiefEscaped(); }
+  } else if (th.state === 'run') {
+    if (movePerson(g, TDOOR.x, TDOOR.z, 9, dt)) { th.state = 'away'; g.visible = false; scheduleThief(); }
+  }
+}
+function thiefAlertText() {                             // how far away he is and which way to turn
+  const vx = thief.g.position.x - player.x, vz = thief.g.position.z - player.z, d = Math.hypot(vx, vz);
+  const f = -Math.sin(player.yaw) * vx - Math.cos(player.yaw) * vz, r = Math.cos(player.yaw) * vx - Math.sin(player.yaw) * vz;
+  const dir = Math.abs(r) < Math.abs(f) * 0.6 ? (f > 0 ? 'قدامك' : 'وراك') : (r > 0 ? 'على يمينك' : 'على شمالك');
+  return 'حرامي في الأوضة! على بُعد ' + Math.round(d) + ' متر — ' + dir + (thief.state === 'out' ? ' — بيهرب!' : '');
+}
+
+// ── the helper: walks between the heap and the sorter, collecting notes and feeding them into the machine
+const WHOME = { x: 15.2, z: -12.1 }, WMID = { x: 12, z: -11.6 };
+const worker = { g: makePerson(0x2456a6, 0x1d2c4a, 0xd9a57b, 0xf2c21b), state: 'toMid', load: zeroes(), acc: 0, col: -1, timer: 0 };
+const crate = box(0.42, 0.3, 0.3, woodMat, 0, 1.05, 0.3, worker.g); crate.visible = false;
+function updateWorker(dt) {
+  const rate = WORKER_RATE[up.worker], w = worker, g = w.g; if (!rate) return;
+  if (!g.visible) { g.visible = true; g.position.set(WHOME.x, 0, WHOME.z); w.state = 'toMid'; }
+  w.acc = Math.min(w.acc + dt * rate, rate * 60);
+  if (w.state === 'toMid') {
+    if (pilesLeft <= 0) { standPerson(g); return; }       // nothing left for him to collect
+    if (movePerson(g, WMID.x, WMID.z, 3.6, dt)) { w.col = nearestCol(WMID.x, WMID.z, 60); w.state = w.col < 0 ? 'backMid' : 'toHeap'; }
+  } else if (w.state === 'toHeap') {
+    if (w.col < 0 || colCount[w.col] <= 0) w.col = nearestCol(g.position.x, g.position.z, 60);   // goes for real depth of money first, the scatterings last
+    if (w.col < 0) w.state = 'backMid';
+    else if (approach(g, w.col, 3.6, dt)) { w.state = 'gather'; w.timer = 2.5; }
+  } else if (w.state === 'gather') {
+    w.timer -= dt; digArms(g);
+    const n = Math.floor(w.acc);
+    if (n > 0) { const got = grabNotes(g.position.x, g.position.z, n, w.load); w.acc -= got; if (!got) { w.col = -1; w.state = pilesLeft > 0 ? 'toHeap' : 'backMid'; } }
+    crate.visible = sum(w.load) > 0;
+    if (w.timer <= 0 && w.state === 'gather') w.state = 'backMid';
+  } else if (w.state === 'backMid') {
+    if (movePerson(g, WMID.x, WMID.z, 3.6, dt)) w.state = 'home';
+  } else if (w.state === 'home') {
+    if (movePerson(g, WHOME.x, WHOME.z, 3.6, dt)) {
+      let stacked = false;
+      const fk = Math.floor(sum(w.load) / FAKE_ODDS + Math.random()); if (fk) { fakesCaught += fk; bonus += fk * FAKE_BONUS; }   // the sorter weeds out fakes from his load too
+      NOTE_DENOMS.forEach(d => { hopper[d] += w.load[d]; w.load[d] = 0; const k = Math.floor(hopper[d] / NOTES_PER_BUNDLE); if (k) { tray[d] += k; hopper[d] -= k * NOTES_PER_BUNDLE; stacked = true; } });
+      crate.visible = false; drawDisplay(); hudDirty = true;
+      if (stacked) { drawTray(); if (Math.hypot(player.x - MACHINE.x, player.z - MACHINE.z) < 12) sfx.stack(); }
+      w.state = 'toMid';
+    }
+  }
+}
+// ── the guard: stands by the emergency door and stops a thief on his way out
+const guard = makePerson(0x1b2a4a, 0x10182a, 0xd9a57b, 0x0d1424); guard.position.set(TDOOR.x + 1.8, 0, hd - 1); guard.rotation.y = Math.PI;
+let beltObs = false;
+function applyUpgrades() {
+  guard.visible = !!up.guard; beltGroup.visible = !!up.belt; Object.keys(decor).forEach(k => decor[k].visible = !!up[k]);
+  if (up.belt && !beltObs) { beltObs = true; addObs(READY.x + 0.12, READY.x + 1.62, READY.z - 0.65, READY.z + 0.65); }
+  hudDirty = true;
+}
+// ── the upgrades desk
+const UPG = [
+  { id: 'hands', name: 'إيد أسرع', prices: [150, 1200], now: l => 'سرعة لَمّ الورق ×' + HAND_MUL[l] },
+  { id: 'bag', name: 'شنطة وكيس عملة أكبر', prices: [200, 1500], now: l => 'السعة ×' + BAG_MUL[l] },
+  { id: 'trolley', name: 'عربية نقل', prices: [250, 1500, 6000], now: l => 'بتشيل باكوهات ×' + TROLLEY_MUL[l] },
+  { id: 'worker', name: 'عامل بيلمّ معاك', prices: [600, 4000, 15000], now: l => l ? 'بيلمّ ' + WORKER_RATE[l] + ' ورقة في الثانية ويحطهم في ماكينة الفرز' : 'مفيش عامل' },
+  { id: 'belt', name: 'سير بين المكنتين', prices: [2500], now: l => l ? 'الرزم بتتأستك لوحدها وتستناك باكوهات جاهزة' : 'مش متركّب' },
+  { id: 'guard', name: 'حارس أمن', prices: [5000], now: l => l ? 'بيمسك الحرامي عند الباب ويرجّع الفلوس' : 'مفيش حارس' },
+  { id: 'ohand', name: 'كف أوسع للطلبيات', prices: [400, 1500], now: l => 'بتشيل ' + (5 + [0, 3, 7][l]) + ' ورقات في إيدك على ترابيزة الطلبيات' },
+  { id: 'plant', name: 'ديكور: زرع جنب المكتب', prices: [300], now: l => l ? 'موجود' : 'مش موجود' },
+  { id: 'rug', name: 'ديكور: سجادة قدام المكتب', prices: [600], now: l => l ? 'موجودة' : 'مش موجودة' },
+  { id: 'frame', name: 'ديكور: برواز دهب على الحيطة', prices: [1000], now: l => l ? 'متعلّق' : 'مش متعلّق' }
+];
+function drawShop() {
+  $('shopBonus').textContent = fmt(bonus);
+  const list = $('shopList'); list.innerHTML = '';
+  UPG.forEach((u, i) => {
+    const l = up[u.id], max = u.prices.length, row = document.createElement('div'); row.className = 'row';
+    row.innerHTML = '<div><b>' + (i + 1) + ' — ' + u.name + '</b> <small style="display:inline">(المستوى ' + l + ' من ' + max + ')</small>' +
+      '<small>دلوقتي: ' + u.now(l) + (l < max ? ' ← بعد الشراء: ' + u.now(l + 1) : '') + '</small></div>';
+    const b = document.createElement('button');
+    if (l >= max) { b.textContent = 'أقصى مستوى'; b.disabled = true; }
+    else { b.textContent = 'اشتري بـ' + fmt(u.prices[l]); b.disabled = bonus < u.prices[l]; b.onclick = () => buy(i); }
+    row.appendChild(b); list.appendChild(row);
+  });
+}
+function buy(i) {
+  const u = UPG[i]; if (!u) return false;
+  const l = up[u.id]; if (l >= u.prices.length) return false;
+  if (bonus < u.prices[l]) { sfx.wrong(); return false; }
+  bonus -= u.prices[l]; up[u.id]++; sfx.granted(); applyUpgrades(); drawShop(); updateHud(); saveGame();
+  return true;
+}
+// ── saving: the whole game is written to the browser's storage every few seconds
+function saveGame() {
+  if (!CODE || state === 'menu' || state === 'won') return;
+  const plus = (a, b, c) => { const o = {}; DENOMS.forEach(d => o[d] = a[d] + b[d] + c[d]); return o; };   // money in a thief's or the helper's hands is kept
+  try {
+    localStorage.setItem(SAVE_KEY, JSON.stringify({ v: 2, code: CODE, difficulty, elapsed, collected, coinsCollected, coinPouch, bonus, up, thievesCaught, thievesEscaped, wrongTries, stage, goldFound, fakesInBag, fakesCaught, gold, order, ordersDone, finished, shift, shiftStart,
+      loose: plus(loose, thief.loot, worker.load), hopper, tray, stacks, bundles, shelved, stolen, ready,
+      units: units.map(u => [u.denom, u.count]), colBase: Array.from(colBase), colCount: Array.from(colCount), pcCoin: Array.from(pcCoin) }));
+  } catch (e) {}
+}
+function readSave() {
+  try { const s = JSON.parse(localStorage.getItem(SAVE_KEY)); return s && s.v === 2 && s.colCount.length === NCOL && /^\d{4}$/.test(s.code) ? s : null; } catch (e) { return null; }
+}
+function clearSave() { try { localStorage.removeItem(SAVE_KEY); } catch (e) {} }
+function loadGame(s) {
+  CODE = s.code; difficulty = s.difficulty; elapsed = s.elapsed; collected = s.collected; coinsCollected = s.coinsCollected; coinPouch = s.coinPouch; bonus = s.bonus;
+  thievesCaught = s.thievesCaught || 0; thievesEscaped = s.thievesEscaped || 0; wrongTries = s.wrongTries || 0;
+  Object.keys(up).forEach(k => up[k] = s.up[k] || 0);
+  [[loose, s.loose], [hopper, s.hopper], [tray, s.tray], [stacks, s.stacks], [bundles, s.bundles], [shelved, s.shelved], [stolen, s.stolen], [ready, s.ready]]
+    .forEach(([a, b]) => DENOMS.forEach(d => a[d] = b[d] || 0));
+  colBase.set(s.colBase); colCount.set(s.colCount); pcCoin.set(s.pcCoin);
+  stage = s.stage || 0; goldFound = s.goldFound || 0; fakesInBag = s.fakesInBag || 0; fakesCaught = s.fakesCaught || 0;
+  gold.length = 0; (s.gold || []).forEach(b => gold.push(b));
+  order = s.order && s.order.targets ? s.order : null; ordersDone = s.ordersDone || {}; finished = !!s.finished; shift = s.shift || 0; shiftStart = s.shiftStart || 0;
+  if (!('shift' in s)) { const v = value(s.shelved) * NOTES_PER_BUNDLE; while (shift < SHIFTS.length && v >= SHIFTS[shift]) shift++; shiftStart = elapsed; }   // older saves: work out the shift, pay nothing twice if (order) { order.counted = 0; order.pile.forEach(n => { noteKey = Math.max(noteKey, n.k); }); } refreshOrderWorld();
+  pilesLeft = 0; coinsLeft = 0; markInst.count = 0;
+  for (let c = 0; c < NCOL; c++) { pilesLeft += colCount[c]; coinsLeft += pcCoin[c]; }
+  for (let c = 0; c < NCOL; c++) { updateCol(c); if (c < NCOL - 1 && colBase[c + 1] > colBase[c] && colCount[c] === 0 && pcCoin[c] === 0) markCleared(c); }
+  flushPile(); markInst.instanceMatrix.needsUpdate = true;
+  s.units.forEach(([d, n], i) => { const u = units[i]; if (u && d !== null && u.denom === null) { assignUnit(u, d); u.count = n; u.inst.count = n; } });
+  drawTray(); drawReady(); drawDisplay(); applyUpgrades(); lastSave = elapsed;
+}
+const allDone = () => pilesLeft === 0 && coinsLeft === 0 && coinPouch === 0 && sum(shelved) > 0 &&
+  sum(loose) + sum(tray) + sum(stacks) + sum(bundles) + sum(ready) + sum(thief.loot) + sum(worker.load) === 0;
+
+// ───────────────────────── Phase 4: side orders, done entirely by hand ─────────────────────────
+// Order cash is separate from the campaign: it never touches the heap, the safe or the 100,000,000 total.
+// A "kind" is one sort of note: a number is an Egyptian denomination, a text key is another currency (add more here, e.g. S50 for riyals).
+const playNote = (text, sub, bg) => { const c = document.createElement('canvas'); c.width = 256; c.height = 112; const g = c.getContext('2d');
+  g.fillStyle = bg; g.fillRect(0, 0, 256, 112); g.strokeStyle = 'rgba(255,255,255,.75)'; g.lineWidth = 4; g.strokeRect(6, 6, 244, 100);
+  g.fillStyle = '#fff'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.font = 'bold 50px Georgia'; g.fillText(text, 128, 46);
+  g.font = 'bold 15px Arial'; g.direction = 'rtl'; g.fillText(sub, 128, 90); return c.toDataURL(); };
+const KINDS = { U20: { label: '20 دولار', short: '$20', color: '#3f7a56' }, U100: { label: '100 دولار', short: '$100', color: '#2f5f7a' } };
+Object.keys(KINDS).forEach(k => { KINDS[k].img = playNote(KINDS[k].short, 'دولار — ورق لعب مش حقيقي', KINDS[k].color); });
+const kindName = k => KINDS[k] ? KINDS[k].label : k + ' جنيه', kindShort = k => KINDS[k] ? KINDS[k].short : String(k);
+const kindColor = k => KINDS[k] ? KINDS[k].color : COLORS[k], kindImg = k => KINDS[k] ? KINDS[k].img : IMGS[k];
+const rngFrom = seed => () => { seed = (seed + 0x6D2B79F5) | 0; let t = Math.imul(seed ^ (seed >>> 15), 1 | seed); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
+const weekId = () => { const d = new Date(), y = d.getFullYear(), w = Math.floor((d - new Date(y, 0, 1)) / 6048e5); return y * 100 + w; };
+const WEEK_KEY = 'moneyVault.weekly';
+const readWeek = () => { try { return JSON.parse(localStorage.getItem(WEEK_KEY)) || {}; } catch (e) { return {}; } };
+const pick = (r, lo, hi, step) => lo + Math.floor(r() * ((hi - lo) / step + 1)) * step;
+const withExtra = (targets, extra) => { const p = []; targets.forEach(t => { for (let i = 0; i < t.n + extra; i++) p.push(t.k); }); return p; };
+// every order: who may take it, what it pays, and how its cash is laid out. vary = not the first time, so the numbers change
+const ORDERS = {
+  shops4: { name: 'فكّة لأربع محلات', about: 'أربع محلات محتاجين فكّة، كل واحد بفئة مختلفة. افرز وعِد وحزّم وسلّم.', reward: 1500, replay: 300, perfect: 500,
+    open: () => stage >= 2 || finished, lock: 'بتتفتح بعد المرحلة التانية (10,000,000 جنيه في الخزنة)',
+    build: (r, vary) => { const n = vary ? [pick(r, 3, 8, 1), pick(r, 6, 14, 2), pick(r, 15, 30, 5), pick(r, 30, 50, 10)] : [5, 10, 25, 50];
+      const targets = [100, 50, 20, 10].map((k, i) => ({ k, n: n[i], who: 'محل ' + (i + 1) })); return { targets, pile: withExtra(targets, 3), packs: [] }; } },
+  audit: { name: 'جرد آخر الوردية', about: 'أربع باكوهات عليها ليبل. فُك كل باكو وعِدّه بإيدك: واحد منهم ناقص. كمّله من الورق الفرط، حزّمه تاني، وسلّم الأربعة.', reward: 1200, replay: 300, perfect: 500,
+    open: () => ordersDone.shops4 > 0, lock: 'بتتفتح بعد أول طلبية «فكّة لأربع محلات»',
+    build: (r, vary) => { const n = vary ? [pick(r, 8, 14, 2), pick(r, 15, 25, 5), pick(r, 20, 30, 5), pick(r, 25, 40, 5)] : [10, 20, 25, 30], bad = Math.floor(r() * 4), miss = 1 + Math.floor(r() * 2);
+      const targets = [100, 50, 20, 10].map((k, i) => ({ k, n: n[i], who: 'جرد' }));
+      return { targets, pile: withExtra(targets.map(t => ({ k: t.k, n: 0 })), 3), packs: targets.map((t, i) => ({ k: t.k, n: t.n - (i === bad ? miss : 0), label: t.n })) }; } },
+  fx: { name: 'شحنة صرافة', about: 'كومة فيها جنيه ودولار ملخبطين. افصل العملتين، وسلّم كل رف طلبه بالظبط. (الدولار هنا ورق لعب مش حقيقي.)', reward: 1500, replay: 300, perfect: 500,
+    open: () => ordersDone.shops4 > 0, lock: 'بتتفتح بعد أول طلبية «فكّة لأربع محلات»',
+    build: (r, vary) => { const n = vary ? [pick(r, 6, 14, 2), pick(r, 10, 20, 5), pick(r, 6, 14, 2), pick(r, 3, 8, 1)] : [10, 20, 10, 5];
+      const targets = [[100, 'رف الجنيه'], [50, 'رف الجنيه'], ['U20', 'رف الدولار'], ['U100', 'رف الدولار']].map(([k, who], i) => ({ k, n: n[i], who })); return { targets, pile: withExtra(targets, 3), packs: [] }; } },
+  weekly: { name: 'تحدي الأسبوع', about: 'نفس الطلبية لكل الناس الأسبوع ده. حاول تكسر أحسن وقت ليك. المكافأة مرة واحدة في الأسبوع.', reward: 800, replay: 0, perfect: 200, seeded: true,
+    open: () => ordersDone.shops4 > 0, lock: 'بتتفتح بعد أول طلبية «فكّة لأربع محلات»',
+    build: r => { const n = [pick(r, 3, 8, 1), pick(r, 6, 14, 2), pick(r, 15, 30, 5), pick(r, 20, 40, 10)];
+      const targets = [200, 100, 50, 20].map((k, i) => ({ k, n: n[i], who: 'عميل ' + (i + 1) })); return { targets, pile: withExtra(targets, 4), packs: [] }; } },
+  recover: { name: 'استرجاع المسروقات', about: 'الشرطة لقت شنطة الحرامي. عِد عيّنة من كل فئة وسلّمها لمحضر الاستلام، وكل اللي اتسرق يرجع لشنطتك عشان تكمّل الـ100,000,000.', reward: 0, replay: 0, perfect: 0,
+    open: () => value(stolen) > 0, lock: 'بتظهر بس لو الحرامي هرب بفلوس',
+    build: () => { const targets = [200, 100, 50, 20].map(k => ({ k, n: 10, who: 'محضر' })); return { targets, pile: withExtra(targets, 3), packs: [] }; } }
+};
+const OV = { order: 'orderOv', offer: 'orderOffer', packs: 'packOv', ores: 'orderRes' };
+let order = null, ordersDone = {}, countTray = 0, packShop = -1, noteKey = 0, finished = false, quietShift = false, pending = {}, resAdUsed = true;
+const handCap = () => 5 + [0, 3, 7][up.ohand];
+const OTABLE = { x: 18.9, z: 13.2 }, OSHELF_Z = [3.6, 1.2, -1.2, -3.6];
+box(1.1, 0.07, 2.4, woodMat, OTABLE.x, 0.82, OTABLE.z);
+[[-0.45, -1.1], [0.45, -1.1], [-0.45, 1.1], [0.45, 1.1]].forEach(([dx, dz]) => box(0.08, 0.8, 0.08, woodMat, OTABLE.x + dx, 0.4, OTABLE.z + dz));
+[-0.7, -0.25, 0.2, 0.65].forEach((dz, i) => box(0.5, 0.06, 0.36, std([0x2f8f83, 0xb8553f, 0x3d78b8, 0xd9772f][i]), OTABLE.x - 0.1, 0.885, OTABLE.z + dz));   // the four trays
+addObs(OTABLE.x - 0.55, OTABLE.x + 0.55, OTABLE.z - 1.2, OTABLE.z + 1.2);
+const signTex = (text, bg, fg) => labelTex(text, bg, fg, 640, 128, 'bold 50px Arial');
+const wallSign = (text, y, z, w, bg, fg) => { const m = new THREE.Mesh(new THREE.PlaneGeometry(w, w * 0.2), new THREE.MeshBasicMaterial({ map: signTex(text, bg, fg) })); m.rotation.y = -Math.PI / 2; m.position.set(hw - 0.01, y, z); scene.add(m); return m; };
+wallSign('مكتب الطلبيات', 2.6, OTABLE.z, 2.4, '#1a1f27', '#5dfc9a');
+const shopSlots = OSHELF_Z.map((z, i) => {              // the four hand-over spots; their signs follow the running order
+  box(0.9, 0.9, 1.1, darkSteel, 19.45, 0.45, z); box(0.96, 0.05, 1.16, steelMat, 19.45, 0.92, z); addObs(19.0, 19.9, z - 0.55, z + 0.55);
+  const sign = wallSign('تسليم ' + (i + 1), 1.85, z, 1.9, '#39414d', '#c9d1db');
+  const pack = box(0.6, 0.12, 0.28, std(0xffffff), 19.4, 1.0, z); pack.rotation.y = Math.PI / 2; pack.visible = false; return { sign, pack };
+});
+const targetText = t => t.who + ': ' + t.n + ' × ' + kindName(t.k);
+function refreshOrderWorld() {
+  shopSlots.forEach((sl, i) => {
+    const t = order && order.targets[i];
+    sl.sign.material.map = t ? signTex(t.who + ': ' + t.n + ' × ' + kindShort(t.k), kindColor(t.k), '#ffffff') : signTex('تسليم ' + (i + 1), '#39414d', '#c9d1db'); sl.sign.material.needsUpdate = true;
+    sl.pack.visible = !!(t && order.delivered[i]); if (t) sl.pack.material = KINDS[t.k] ? std(new THREE.Color(kindColor(t.k)).getHex()) : bundleMats[t.k];
+  });
+  hudDirty = true;
+}
+function buildOrder(id) {                               // lay an order out (the weekly one comes out the same for everybody that week)
+  const def = ORDERS[id], r = def.seeded ? rngFrom(weekId()) : Math.random, b = def.build(r, (ordersDone[id] || 0) > 0);
+  const pile = b.pile.slice(); for (let i = pile.length - 1; i > 0; i--) { const j = Math.floor(r() * (i + 1)); [pile[i], pile[j]] = [pile[j], pile[i]]; }
+  const kinds = []; b.targets.forEach(t => { if (!kinds.includes(t.k)) kinds.push(t.k); });
+  const trays = {}; kinds.forEach(k => trays[k] = 0);
+  return { id, targets: b.targets, kinds, pile: pile.map(k => ({ d: k, k: ++noteKey, x: Math.round(2 + r() * 84), y: Math.round(4 + r() * 74), r: Math.round(r() * 360) })),
+    hand: [], trays, counted: 0, packs: b.packs, delivered: b.targets.map(() => false), mistakes: 0, wrong: 0, time: 0, paid: false, quiet: false };
+}
+function startOrder(id) { id = id || 'shops4'; order = pending[id] || buildOrder(id); pending = {}; order.quiet = quietShift && !ORDERS[order.id].seeded; countTray = 0; refreshOrderWorld(); saveGame(); }
+const ordSay = (t, bad) => { const m = $('ordMsg'); m.textContent = t; m.style.color = bad ? '#ff7b7b' : '#5dfc9a'; };
+const noteStyle = k => 'background-image:url(' + kindImg(k) + ');background-color:' + kindColor(k);
+const packText = p => (p.label ? 'مكتوب عليه ' + p.label : p.n) + ' × ' + kindName(p.k);
+const ordTitle = () => 'طلبية «' + ORDERS[order.id].name + '»' + (order.quiet ? ' — وردية هادية' : ' — الوقت ' + mmss(order.time));
+function drawOrderSide() {                              // everything round the work area: requirements, hand, trays, finished packs
+  $('ordTitle').textContent = ordTitle();
+  $('ordReq').innerHTML = order.targets.map((t, i) => '<span class="' + (order.delivered[i] ? 'ok' : order.packs.some(p => !p.label && p.k === t.k && p.n === t.n) ? 'rdy' : '') + '">' + (order.delivered[i] ? '✓ ' : '') + targetText(t) + '</span>').join('');
+  $('ordHand').innerHTML = 'في إيدك ' + order.hand.length + ' من ' + handCap() + ': ' + (order.hand.map(k => '<i style="' + noteStyle(k) + '"></i>').join('') || '<span style="color:#8b95a3">فاضية — دوس على ورقة، أو اسحب على الكومة عشان تلمّ كبشة</span>');
+  $('ordTrays').style.gridTemplateColumns = 'repeat(' + order.kinds.length + ',1fr)';
+  $('ordTrays').innerHTML = order.kinds.map(k => '<div class="otray" data-act="tray:' + k + '"><b><span class="chip" style="background:' + kindColor(k) + '"></span>درج ' + kindName(k) + '</b><em>' + (order.trays[k] ? '▤' : '—') + '</em>' +
+    '<button data-act="count:' + k + '"' + (order.trays[k] ? '' : ' disabled') + '>عِد وحزّم</button></div>').join('');
+  $('ordPacks').innerHTML = 'الباكوهات اللي معاك: ' + (order.packs.map((p, i) => '<span>' + packText(p) + ' <button data-act="unband:' + i + '">فُك الأستك</button></span>').join('') || '<span style="border-color:#2f3a49;color:#8b95a3">لسه مفيش</span>');
+}
+function drawOrder() {
+  if (!order) return;
+  const main = $('ordMain');
+  if (countTray) {
+    main.innerHTML = '<div id="ordCount"><div><div id="ordStack"></div><small>درج ' + kindName(countTray) + ' — فُر الورق: كليك لكل ورقة، أو اسحب صباعك على الرزمة، أو مسطرة المسافة</small></div>' +
+      '<div><b id="ordN">0</b>ورقة اتعدّت<div id="ordDone"></div></div></div>' +
+      '<div class="obtns"><button data-act="back1">رجّع ورقة</button><button data-act="band" id="ordBand"></button><button data-act="toPile">ارجع للكومة</button></div>';
+    updateCount();
+  } else {
+    main.innerHTML = '<div id="ordPile">' + order.pile.map(n => '<div class="onote" data-k="' + n.k + '" style="left:' + n.x + '%;top:' + n.y + '%;transform:rotate(' + n.r + 'deg);' + noteStyle(n.d) + '"></div>').join('') +
+      (order.pile.length ? '' : '<div class="oempty">مفيش ورق فرط على الترابيزة — عِد الدروج وحزّم</div>') + '</div>';
+  }
+  drawOrderSide();
+}
+function updateCount() {                                // refreshes the counting view without rebuilding it (a sweep must not lose its target)
+  const k = countTray, left = order.trays[k] - order.counted, st = $('ordStack'), dn2 = $('ordDone');
+  st.className = left > 0 ? '' : 'empty'; st.style.cssText = left > 0 ? noteStyle(k) : '';
+  dn2.className = order.counted ? '' : 'empty'; dn2.style.cssText = order.counted ? noteStyle(k) : '';
+  $('ordN').textContent = order.counted; $('ordBand').textContent = 'حُط الأستك على ' + order.counted + ' ورقة'; $('ordBand').disabled = !order.counted;
+}
+function grabNote(key) {                                // lift one note off the order pile into your hand
+  const i = order.pile.findIndex(n => n.k === +key); if (i < 0) return false;
+  if (order.hand.length >= handCap()) { ordSay('إيدك مليانة — حُط اللي معاك في الدروج الأول', true); return false; }
+  order.hand.push(order.pile.splice(i, 1)[0].d); sfx.pick();
+  const el = document.querySelector('.onote[data-k="' + key + '"]'); if (el) el.remove();
+  ordSay(''); drawOrderSide(); return true;
+}
+const asKind = v => KINDS[v] ? v : +v;
+function dropInTray(k) {
+  k = asKind(k);
+  if (!order.hand.length) { ordSay('إيدك فاضية — لِمّ ورق من الكومة الأول', true); return false; }
+  const n = order.hand.filter(x => x === k).length;
+  if (!n) {                                             // wrong tray: nothing is lost, the notes stay in your hand
+    order.mistakes++; sfx.wrong(); ordSay('غلط! اللي في إيدك مش ' + kindName(k) + ' — الورق لسه في إيدك، حُطه في الدرج بتاعه', true);
+    const el = document.querySelector('.otray[data-act="tray:' + k + '"]'); if (el) { el.classList.add('bad'); setTimeout(() => el.classList.remove('bad'), 350); }
+    return false;
+  }
+  order.hand = order.hand.filter(x => x !== k); order.trays[k] += n; sfx.stack();
+  drawOrderSide(); ordSay(n + ' ورقة اتحطوا في درج ' + kindName(k) + (order.hand.length ? ' — اللي فاضل في إيدك نوع تاني' : '')); saveGame(); return true;
+}
+function flickOne() {                                   // thumb one note off the stack onto the counted pile
+  if (!countTray) return false;
+  if (order.trays[countTray] - order.counted <= 0) { ordSay('الدرج ده خلص', true); return false; }
+  order.counted++; sfx.count(); beep(1500, 0.03, 'square', 0.02);
+  const st = $('ordStack'); st.classList.remove('flip'); void st.offsetWidth; st.classList.add('flip');
+  updateCount(); return true;
+}
+function bandCounted() {                                // put the elastic band on what you counted: that is the pack, right or wrong
+  if (!countTray || !order.counted) return false;
+  order.trays[countTray] -= order.counted; order.packs.push({ k: countTray, n: order.counted }); order.counted = 0; sfx.band();
+  ordSay('باكو جديد اتحزّم. سلّمه في مكانه، أو فُكّه لو العدد مش مظبوط.'); updateCount(); drawOrderSide(); saveGame(); return true;
+}
+function unband(i) { const p = order.packs[i]; if (!p) return; order.trays[p.k] += p.n; order.packs.splice(i, 1); sfx.take(); drawOrder(); ordSay('الأستك اتفك والورق في درج ' + kindName(p.k) + ' — عِدّه'); saveGame(); }
+function openCount(k) { k = asKind(k); if (!order.trays[k]) return; if (order.hand.length) { ordSay('حُط اللي في إيدك في الدروج الأول', true); return; } countTray = k; order.counted = 0; drawOrder(); ordSay(''); }
+function deliverPack(i, pi) {                           // hand a pack over at spot i; a wrong one is refused and stays with you
+  const t = order && order.targets[i], p = order && order.packs[pi]; if (!t || !p || order.delivered[i]) return false;
+  if (p.k !== t.k || p.n !== t.n) {
+    order.wrong++; sfx.wrong(); closeUi();
+    toast('«' + t.who + '» رفض الباكو: ' + (p.k !== t.k ? 'النوع غلط، محتاج ' + kindName(t.k) : 'العدد مش مظبوط، محتاج ' + t.n + ' بالظبط — فُكّه وعِدّه') + '. الباكو لسه معاك'); saveGame(); return false;
+  }
+  order.packs.splice(pi, 1); order.delivered[i] = true; sfx.granted(); refreshOrderWorld();
+  if (order.delivered.every(Boolean)) { finishOrder(); return true; }
+  closeUi(); toast(targetText(t) + ' — اتسلّم', true); saveGame(); return true;
+}
+const adsOn = () => !!(window.VaultAds && window.VaultAds.showRewarded) || STORE.adMode === 'test';
+function rewardedAd(done) {                             // integration point: a real ad provider (web or Android) supplies window.VaultAds.showRewarded(callback)
+  if (window.VaultAds && window.VaultAds.showRewarded) return window.VaultAds.showRewarded(done);
+  if (STORE.adMode === 'test') { $('resAd').textContent = 'إعلان تجريبي شغّال… 3 ثواني'; setTimeout(() => done(true), 3000); }
+}
+function finishOrder() {
+  const def = ORDERS[order.id], id = order.id, first = !ordersDone[id], clean = order.wrong === 0 && order.mistakes === 0, nT = order.targets.length;
+  let pay = (first ? def.reward : def.replay) + (clean ? def.perfect : 0), extra = '';
+  if (def.seeded) {                                     // weekly challenge: paid once a week, best time kept on this device
+    const wk = readWeek(), paidThisWeek = wk.week === weekId(); pay = paidThisWeek ? 0 : def.reward + (clean ? def.perfect : 0);
+    const better = !paidThisWeek || order.time < wk.time; extra = '<p>' + (better ? 'أحسن وقت ليك الأسبوع ده!' : 'أحسن وقت ليك الأسبوع ده: ' + mmss(wk.time)) + '</p>';
+    try { localStorage.setItem(WEEK_KEY, JSON.stringify({ week: weekId(), time: better ? order.time : wk.time })); } catch (e) {}
+  }
+  if (id === 'recover') {                               // everything the thieves took goes back into your bag, so the exact 100,000,000 is reachable again
+    const v = value(stolen); DENOMS.forEach(d => { loose[d] += stolen[d]; stolen[d] = 0; }); finished = false;
+    extra = '<p><b style="color:#5dfc9a">' + fmt(v) + ' جنيه</b> رجعوا لشنطتك. ودّيهم ماكينة الفرز وكمّل الخزنة لـ100,000,000.</p>';
+  }
+  if (!order.paid) { order.paid = true; bonus += pay; }   // paid once, and the order is closed in the same breath
+  ordersDone[id] = (ordersDone[id] || 0) + 1;
+  const nextUp = Object.keys(ORDERS).filter(k => k !== 'recover' && ORDERS[k].open()).map(k => '«' + ORDERS[k].name + '»').join(' · ');
+  $('resBody').innerHTML = '<p>«' + def.name + '» — ' + nT + ' تسليمات مظبوطة.</p>' +
+    '<p>دقة التسليم: <b>' + Math.round(100 * nT / (nT + order.wrong)) + '%</b>' + (order.wrong ? ' (' + order.wrong + ' باكو اترفض)' : '') + ' · غلطات الفرز: <b>' + order.mistakes + '</b>' + (order.quiet ? ' · وردية هادية' : ' · الوقت: <b>' + mmss(order.time) + '</b>') + '</p>' +
+    (pay ? '<p>المكافأة: <b style="color:var(--gold)">' + fmt(pay) + ' حوافز</b>' + (clean && def.perfect ? ' (منها ' + fmt(def.perfect) + ' عشان مفيش ولا غلطة)' : '') + (first || def.seeded ? '' : ' — مكافأة الإعادة') + '</p>' : '') + extra +
+    '<p style="color:#9aa4b1;font-size:13px">في مكتب الطلبيات دلوقتي: ' + nextUp + '</p>';
+  resAdUsed = false; $('resAd').classList.toggle('hidden', !adsOn()); $('resAd').disabled = false;
+  $('resAd').textContent = 'شوف إعلان وخُد 300 حوافز' + (STORE.adMode === 'test' && !window.VaultAds ? ' (تجريبي)' : '');
+  order = null; countTray = 0; refreshOrderWorld(); updateHud(); saveGame(); sfx.win();
+  closeUi(); openUi('ores');
+}
+function openOffice() {                                 // the orders office: every order with its exact requirements and reward, before you accept
+  pending = {}; const list = $('offerReq'); list.innerHTML = '';
+  Object.keys(ORDERS).forEach(id => {
+    const def = ORDERS[id], ok = def.open(); if (id === 'recover' && !ok) return;
+    const row = document.createElement('div'); row.className = 'row'; let body = '<b>' + def.name + '</b><small>' + def.about + '</small>';
+    if (ok) {
+      const o = pending[id] = buildOrder(id), done = ordersDone[id] || 0; let pay = done ? def.replay : def.reward, note = done ? ' (إعادة بأرقام جديدة)' : '';
+      if (def.seeded) { const wk = readWeek(), cur = wk.week === weekId(); pay = cur ? 0 : def.reward; note = cur ? ' — أحسن وقت ليك: ' + mmss(wk.time) : ''; }
+      body += '<small style="color:#dfe3e8">' + o.targets.map(targetText).join(' · ') + '</small><small style="color:var(--gold)">' +
+        (id === 'recover' ? 'المكافأة: ' + fmt(value(stolen)) + ' جنيه مسروقين يرجعوا لشنطتك' : 'المكافأة: ' + fmt(pay) + ' حوافز' + (def.perfect ? ' + ' + fmt(def.perfect) + ' لو من غير غلطة' : '') + note) + '</small>';
+    } else body += '<small style="color:#ff9b9b">مقفولة: ' + def.lock + '</small>';
+    row.innerHTML = '<div>' + body + '</div>';
+    const b = document.createElement('button'); b.textContent = 'اقبل'; b.disabled = !ok; b.dataset.order = id;
+    b.onclick = () => { startOrder(id); closeUi(); countTray = 0; drawOrder(); openUi('order'); ordSay(order.packs.length ? 'الباكوهات قدامك: فُك كل واحد وعِدّه.' : 'الكومة قدامك: لِمّ، افرز في الدروج، عِد، وحُط الأستك.'); };
+    row.appendChild(b); list.appendChild(row);
+  });
+  $('quietBox').checked = quietShift;
+  openUi('offer');
+}
+function openPacks(i) {
+  packShop = i; $('packTitle').textContent = 'تسليم ' + targetText(order.targets[i]);
+  const list = $('packList'); list.innerHTML = '';
+  order.packs.forEach((p, pi) => { const b = document.createElement('button'); b.innerHTML = '<span class="chip" style="background:' + kindColor(p.k) + '"></span>باكو: ' + packText(p); b.onclick = () => deliverPack(i, pi); list.appendChild(b); });
+  openUi('packs');
+}
+// office decorations bought with bonuses at the upgrades desk
+const decor = {
+  plant: (() => { const g = new THREE.Group(); box(0.4, 0.45, 0.4, std(0x8a4b2a), 0, 0.225, 0, g); const leaf = new THREE.Mesh(new THREE.SphereGeometry(0.45, 10, 8), std(0x2f8f4e)); leaf.position.y = 0.95; leaf.scale.y = 1.4; g.add(leaf); g.position.set(19.2, 0, 10.3); scene.add(g); return g; })(),
+  rug: (() => { const g = new THREE.Group(); box(4.2, 0.02, 2.6, std(0x7a1f2b, { roughness: 1 }), 0, 0.012, 0, g); box(3.6, 0.02, 2.0, std(0xc9a03d, { roughness: 1 }), 0, 0.016, 0, g); box(3.2, 0.02, 1.6, std(0x7a1f2b, { roughness: 1 }), 0, 0.02, 0, g); g.position.set(16.3, 0, 8); g.scale.x = 0.62; scene.add(g); return g; })(),   // in front of the upgrades desk, clear of the pillar
+  frame: (() => { const g = new THREE.Group(); box(0.06, 1.0, 1.5, std(0xd4af37, { metalness: 0.8, roughness: 0.3 }), 0, 0, 0, g); box(0.07, 0.8, 1.3, std(0x1d3b2c), -0.01, 0, 0, g); g.position.set(hw - 0.04, 3.9, 10.6); scene.add(g); return g; })()
+};
+Object.values(decor).forEach(m => m.visible = false);
+(() => {                                                // the order table: taps, sweeps and flicks, same for mouse and finger
+  const ov = $('orderOv'); let sweeping = false, flicking = false, fx = 0;
+  const free = e => { try { e.target.releasePointerCapture(e.pointerId); } catch (_) {} };
+  ov.addEventListener('pointerdown', e => {
+    const t = e.target; if (!order) return;
+    if (t.classList.contains('onote')) { free(e); sweeping = true; grabNote(t.dataset.k); e.preventDefault(); }
+    else if (t.id === 'ordStack') { free(e); flicking = true; fx = e.clientX; flickOne(); e.preventDefault(); }
+  });
+  ov.addEventListener('pointermove', e => {
+    if (sweeping) { const el = document.elementFromPoint(e.clientX, e.clientY); if (el && el.classList.contains('onote')) grabNote(el.dataset.k); }
+    else if (flicking && Math.abs(e.clientX - fx) > 34) { fx = e.clientX; flickOne(); }
+  });
+  const end = () => { sweeping = flicking = false; };
+  addEventListener('pointerup', end); addEventListener('pointercancel', end);
+  ov.addEventListener('click', e => {
+    if (!order) return;
+    const el = e.target.closest('[data-act]'); if (!el) return; const [act, arg] = el.dataset.act.split(':');
+    if (act === 'count') openCount(arg);
+    else if (act === 'tray') dropInTray(arg);
+    else if (act === 'unband') unband(+arg);
+    else if (act === 'back1') { if (order.counted > 0) { order.counted--; updateCount(); } }
+    else if (act === 'band') bandCounted();
+    else if (act === 'toPile') { countTray = 0; order.counted = 0; drawOrder(); }
+  });
+  $('ordLeave').onclick = () => { countTray = 0; if (order) order.counted = 0; closeUi(); };
+  $('offerNo').onclick = () => closeUi();
+  $('quietBox').onchange = e => { quietShift = e.target.checked; };
+  $('resOk').onclick = () => closeUi();
+  $('resAd').onclick = () => { if (resAdUsed) return; $('resAd').disabled = true; rewardedAd(ok => { if (ok && !resAdUsed) { resAdUsed = true; bonus += 300; updateHud(); saveGame(); $('resAd').textContent = 'خدت 300 حوافز — شكرًا'; } }); };
+  $('winMore').onclick = () => { $('winOv').classList.add('hidden'); state = 'playing'; lockPointer(); toast('الخزنة كاملة. مكتب الطلبيات مفتوح على يمين الأوضة', true); };
+})();
+
+// ── the cart: once you own one you push it ahead of you, and whatever you carry rides on it
+const cart = new THREE.Group(); cart.visible = false; scene.add(cart);
+box(0.9, 0.06, 1.2, steelMat, 0, 0.34, 0, cart);
+[[-0.4, -0.5], [0.4, -0.5], [-0.4, 0.5], [0.4, 0.5]].forEach(([x, z]) => { const w = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.12, 0.07, 14), std(0x15171a)); w.rotation.z = Math.PI / 2; w.position.set(x, 0.12, z); cart.add(w); });
+[-0.4, 0.4].forEach(x => box(0.05, 0.75, 0.05, darkSteel, x, 0.72, 0.57, cart)); box(0.85, 0.05, 0.05, darkSteel, 0, 1.08, 0.57, cart);
+const cartLoad = box(0.8, 1, 1.05, std(0xa89c7a, { roughness: 0.95 }), 0, 0.4, -0.02, cart);
+function updateCart() {
+  const on = up.trolley > 0; cart.visible = on; if (!on) return;
+  cart.position.set(player.x - Math.sin(player.yaw) * 1.2, 0, player.z - Math.cos(player.yaw) * 1.2); cart.rotation.y = player.yaw;
+  const fill = Math.min(1, carried() / carryCap()); cartLoad.visible = fill > 0; cartLoad.scale.y = Math.max(0.06, fill * 0.9); cartLoad.position.y = 0.37 + cartLoad.scale.y / 2;
+}
+
+// ───────────────────────── HUD ─────────────────────────
+$('noteCode').textContent = CODE;
+$('bagRows').innerHTML = DENOMS.map(d =>
+  `<tr><td><span class="chip" style="background:${COLORS[d]}"></span>${dn(d)}</td><td id="l${d}">0/100</td><td id="s${d}">0</td><td id="b${d}">0</td></tr>`).join('');
+const carried = () => sum(stacks) + sum(bundles);
+const noteStacks = () => sum(stacks) - stacks[1];       // counted stacks of paper notes (coins go to their own machine)
+let toastTimer = 0, lastToast = -10;
+function toast(msg, good = false) {
+  const t = $('toast'); t.textContent = msg; t.className = good ? 'good' : ''; t.style.opacity = 1;
+  clearTimeout(toastTimer); toastTimer = setTimeout(() => t.style.opacity = 0, 1800);
+}
+function objective() {
+  const lt = sum(loose);
+  if (thiefActive()) return 'فيه حرامي في الأوضة — اجري عليه والحقه قبل ما يوصل باب الطوارئ.';
+  if (order) return 'طلبية «' + ORDERS[order.id].name + '»: جهّز الباكوهات على ترابيزة الطلبيات وسلّم كل واحد في مكانه (' + order.delivered.filter(Boolean).length + ' من ' + order.targets.length + ').';
+  if (finished) return 'الخزنة كاملة. افتح مكتب الطلبيات (على يمين الأوضة) واختار طلبية.' + (value(stolen) ? ' وفيه طلبية «استرجاع المسروقات».' : '');
+  if (noteStacks() > 0) return 'ودّي الرزم المعدودة على مكنة الأستكه.';
+  if (coinPouch >= coinCap()) return 'كيس العملة اتملى. ودّيه ماكينة لف العملة.';
+  if (sum(bundles) > 0) {
+    if (door.unlocked) return 'خُش الخزنة بالباكوهات، اختار لكل فئة رف، ورُصّها عليه.';
+    return 'الخزنة مقفولة. اكتب الباسورد على الكيباد اللي جنب الباب.';
+  }
+  if (sum(ready) > 0 && (pilesLeft === 0 || sum(ready) >= carryCap())) return 'خُد الباكوهات الجاهزة من الترابيزة اللي جنب مكنة الأستكه.';
+  if (sorting) return 'الماكينة بتفرز وتعِد — خليك واقف جنبها.';
+  if (sum(tray) > 0) return 'خُد الرزم المعدودة من ماكينة الفرز والعد.';
+  if (lt >= bagCap()) return 'الشنطة اتملت. ودّيها ماكينة الفرز والعد.';
+  if (lt > 0 && pilesLeft === 0) return 'ودّي الفلوس الملخبطة على ماكينة الفرز والعد.';
+  if (pilesLeft === 0 && lt === 0 && coinPouch > 0 && (coinsLeft === 0 || coinPouch >= coinCap())) return 'ودّي الجنيهات المعدن على ماكينة لف العملة.';
+  if (pilesLeft === 0 && coinsLeft > 0) return 'لِمّ الجنيهات المعدن اللي فاضلة من الكومة — جنيه جنيه.';
+  if (pilesLeft > 0) return 'لِمّ الورق والجنيهات المعدن من الكومة اللي في نص الأوضة — وجّه ودوس كليك.' + (lt > 0 ? ' ولما تحب، ودّي اللي لمّيته ماكينة الفرز والعد.' : '');
+  return 'رُص باقي الباكوهات على الرفوف.';
+}
+function updateHud() {
+  DENOMS.forEach(d => { $('l' + d).textContent = hopper[d] + '/100'; $('s' + d).textContent = stacks[d]; $('b' + d).textContent = bundles[d]; });
+  $('capLoose').textContent = fmt(sum(loose)); $('capMax').textContent = fmt(bagCap()); $('capCarry').textContent = fmt(carryCap()); $('grabState').textContent = fmt(pickRate()); $('coinHave').textContent = fmt(coinPouch); $('coinMax').textContent = fmt(coinCap()); $('coinsLeft').textContent = fmt(coinsLeft); $('coinGrab').textContent = coinGrab(); $('capBundles').textContent = carried(); $('capTray').textContent = sum(tray);
+  const v = value(shelved) * NOTES_PER_BUNDLE;
+  $('vaultAmt').firstChild.textContent = fmt(v) + ' ';
+  $('vaultBar').style.width = (v / TARGET * 100) + '%';
+  $('pilesLeft').textContent = fmt(pilesLeft);
+  $('bonusAmt').textContent = fmt(bonus);
+  $('stageLine').textContent = stage >= STAGES.length ? 'كل المراحل خلصت' : 'المرحلة ' + (stage + 1) + ' من ' + STAGES.length + ' — أمّن ' + fmt(STAGES[stage][0]) + ' جنيه · المكافأة ' + fmt(STAGES[stage][1]) + ' حوافز';
+  $('shiftLine').textContent = shift >= SHIFTS.length ? 'كل الورديات خلصت' : 'الوردية ' + (shift + 1) + ' من ' + SHIFTS.length + ' — وصّل الخزنة لـ' + fmt(SHIFTS[shift]) + ' جنيه';
+  $('goldAmt').textContent = goldFound + ' من ' + gold.length; $('fakeAmt').textContent = fmt(fakesCaught);
+  const sv = value(stolen); $('stolenRow').style.display = sv ? '' : 'none'; $('stolenAmt').textContent = fmt(sv);
+  $('doorState').textContent = door.unlocked ? 'مفتوحة' : 'مقفولة';
+  $('doorState').style.color = door.unlocked ? '#5dfc9a' : '#ff7b7b';
+  const ot = objective();
+  if ($('objText').textContent !== ot) { $('objText').textContent = ot; const ob = $('objective'); ob.classList.remove('flash'); void ob.offsetWidth; ob.classList.add('flash'); }
+  hudDirty = false;
+}
+const mmss = t => String(Math.floor(t / 60)).padStart(2, '0') + ':' + String(Math.floor(t % 60)).padStart(2, '0');
+
+// ───────────────────────── Interaction ─────────────────────────
+const tmpV = new THREE.Vector3();
+function findInteract() {
+  const { x, z } = player;
+  if (Math.hypot(x - MACHINE.x, z - MACHINE.z) < 2.6) return { type: 'machine' };
+  if (Math.hypot(x - PACKER.x, z - PACKER.z) < 2.6) return { type: 'packer' };
+  if (Math.hypot(x - COINER.x, z - COINER.z) < 2.6) return { type: 'coiner' };
+  if (!door.unlocked && Math.hypot(x - 1, z + hd) < 2.6) return { type: 'keypad' };
+  if (Math.hypot(x - DESK.x, z - DESK.z) < 2.4) return { type: 'shop' };
+  if (Math.hypot(x - OTABLE.x, z - OTABLE.z) < 2.4) return { type: 'otable' };
+  for (let i = 0; i < 4; i++) if (Math.hypot(x - 18.6, z - OSHELF_Z[i]) < 1.3) return { type: 'oshelf', i };
+  for (const u of units) {
+    tmpV.set(x, 0, z); u.group.worldToLocal(tmpV);
+    if (Math.abs(tmpV.x) < 2.05 && tmpV.z > 0 && tmpV.z < 2.6) return { type: 'shelf', unit: u, denom: u.denom };
+  }
+  return null;
+}
+function promptFor(it) {
+  if (!it) return '';
+  const K = '<kbd>E</kbd>';
+  switch (it.type) {
+    case 'machine':
+      if (sorting) return 'بتفرز وتعِد… فاضل ' + fmt(sum(loose)) + ' ورقة';
+      if (sum(loose) > 0) return K + 'افرز وعِد ' + fmt(sum(loose)) + ' ورقة ملخبطة';
+      if (sum(tray) > 0) return carried() >= carryCap() ? 'إيدك مليانة — ودّي اللي معاك الأول'
+        : K + 'خُد الرزم المعدودة (' + sum(tray) + ' رزمة مستنية)';
+      return 'ماكينة الفرز والعد — هات الفلوس اللي لمّيتها هنا';
+    case 'packer':
+      if (packing) return 'بتأستك…';
+      if (noteStacks() > 0) return K + 'أستك ' + noteStacks() + ' رزمة';
+      if (sum(ready) > 0) return carried() >= carryCap() ? 'إيدك مليانة — ودّي اللي معاك الأول' : K + 'خُد الباكوهات الجاهزة (' + fmt(sum(ready)) + ' باكو مستني)';
+      if (stacks[1] > 0) return 'الجنيهات المعدن بتتلف في ماكينة لف العملة اللي جنبها';
+      return 'مكنة الأستكه — هات الرزم المعدودة هنا';
+    case 'coiner':
+      if (coining) return 'بتعِد وتلف العملة… فاضل ' + fmt(coinPouch) + ' في الكيس';
+      if (coinPouch > 0) return K + 'حُط ' + fmt(coinPouch) + ' جنيه معدن في الماكينة';
+      return 'ماكينة لف العملة — هات الجنيهات المعدن هنا على طول، من غير فرز (' + hopper[1] + '/100)';
+    case 'note': return K + 'Read the note on the desk';
+    case 'keypad': return elapsed < kpLockUntil ? 'الكيباد مقفول بسبب الإنذار — استنى ' + Math.ceil(kpLockUntil - elapsed) + ' ثانية' : K + 'اكتب الباسورد على الكيباد';
+    case 'shop': return K + 'افتح مكتب الترقيات (معاك ' + fmt(bonus) + ' جنيه حوافز)';
+    case 'otable':
+      if (order) return K + 'اقعد على ترابيزة الطلبيات (فرز وعد وتحزيم بإيدك)';
+      return K + 'افتح مكتب الطلبيات' + (ORDERS.shops4.open() ? '' : ' (أول طلبية بتتفتح بعد المرحلة التانية)');
+    case 'oshelf': {
+      const t = order && order.targets[it.i];
+      if (!t) return 'مكان تسليم ' + (it.i + 1) + ' — مفيش طلبية شغّالة عليه';
+      if (order.delivered[it.i]) return targetText(t) + ' — اتسلّم';
+      return order.packs.length ? K + 'سلّم باكو هنا (' + targetText(t) + ')' : targetText(t) + ' — جهّز الباكو على الترابيزة';
+    }
+    case 'shelf': {
+      const u = it.unit, d = u.denom;
+      if (shelving) return 'بترُص الباكوهات…';
+      if (d === null) return K + 'اختار الفئة اللي هتتحط على الرف ده';
+      if (u.count === 0 && bundles[d] === 0) return K + 'رف ' + dn(d) + ' لسه فاضي — غيّر فئته لو حبيت';
+      if (u.count >= UNIT_CAP) return 'رف ' + dn(d) + ' اتملى (' + UNIT_CAP + ' باكو) — اختار رف فاضي تاني';
+      if (bundles[d] > 0) return K + 'رُص ' + bundles[d] + ' باكو ' + dn(d);
+      return 'رف ' + dn(d) + ' — ' + u.count + ' من ' + UNIT_CAP + ' باكو';
+    }
+  }
+}
+function interact() {
+  const it = findInteract(); if (!it) { tryPick(); return; }
+  if (it.type === 'machine') {
+    if (sorting) return;
+    if (sum(loose) > 0) { sorting = true; sortAcc = 0; sortRate = Math.max(40, sum(loose) / 6); hudDirty = true; }
+    else if (sum(tray) > 0) {
+      let space = carryCap() - carried(), took = 0;
+      if (space <= 0) { toast('إيدك مليانة — ودّي اللي معاك الأول'); return; }
+      DENOMS.forEach(d => { const n = Math.min(tray[d], space); tray[d] -= n; stacks[d] += n; space -= n; took += n; });
+      drawTray(); hudDirty = true; sfx.take(); toast('خدت ' + took + ' رزمة معدودة', true);
+    }
+  } else if (it.type === 'coiner') {
+    if (coining) return;
+    if (coinPouch > 0) { coining = true; coinAcc = 0; coinRate = Math.max(40, coinPouch / 6); outClear(coinOut); }
+    else toast('كيس العملة فاضي — لِمّ جنيهات معدن من الكومة الأول');
+  } else if (it.type === 'packer') {
+    if (packing) return;
+    if (noteStacks() > 0) { packing = true; packAcc = 0; packRate = Math.max(6, noteStacks() / 8); outClear(packOut); }
+    else if (sum(ready) > 0) {
+      let space = carryCap() - carried(), took = 0;
+      if (space <= 0) { toast('إيدك مليانة — ودّي اللي معاك الأول'); return; }
+      NOTE_DENOMS.forEach(d => { const n = Math.min(ready[d], space); ready[d] -= n; bundles[d] += n; space -= n; took += n; });
+      drawReady(); hudDirty = true; sfx.take(); toast('خدت ' + fmt(took) + ' باكو جاهز', true);
+    }
+    else if (stacks[1] > 0) toast('الجنيهات المعدن بتتلف في ماكينة لف العملة');
+    else if (sum(loose) > 0 || sum(tray) > 0) toast('افرز وعِد الفلوس الأول');
+  } else if (it.type === 'note') {
+    knowsCode = true; hudDirty = true; openUi('note');
+  } else if (it.type === 'keypad') {
+    if (elapsed < kpLockUntil) { sfx.wrong(); toast('الكيباد مقفول — استنى ' + Math.ceil(kpLockUntil - elapsed) + ' ثانية'); }
+    else openUi('keypad');
+  } else if (it.type === 'shop') {
+    drawShop(); openUi('shop');
+  } else if (it.type === 'otable') {
+    if (order) { countTray = 0; order.counted = 0; drawOrder(); openUi('order'); }
+    else openOffice();
+  } else if (it.type === 'oshelf') {
+    if (!order || !order.targets[it.i]) toast('مفيش طلبية شغّالة هنا — روح مكتب الطلبيات');
+    else if (order.delivered[it.i]) toast('المكان ده استلم طلبه خلاص', true);
+    else if (!order.packs.length) toast('مفيش باكوهات معاك — جهّزها على ترابيزة الطلبيات');
+    else openPacks(it.i);
+  } else if (it.type === 'shelf') {
+    const u = it.unit;
+    if (u.denom === null) openChooser(u);
+    else if (u.count === 0 && bundles[u.denom] === 0) openChooser(u);
+    else if (u.count >= UNIT_CAP) toast('الرف ده اتملى — اختار رف فاضي تاني');
+    else if (bundles[u.denom] > 0) startShelving(u);
+    else if (sum(bundles) > 0) toast('الرف ده بتاع ' + dn(u.denom));
+  }
+}
+
+// ── UI overlays (keypad / note)
+let kpEntry = '', wrongTries = 0;
+let chooseUnit = null, chooseOpts = [];
+function startShelving(u) { shelving = u; shelfAcc = 0; shelfRate = Math.max(8, bundles[u.denom] / 8); }
+function openChooser(u) {                               // pick which denomination this empty shelf will hold
+  chooseUnit = u; chooseOpts = [];
+  const list = $('chList'); list.innerHTML = '';
+  const planning = sum(bundles) === 0;                    // empty-handed: you are planning the room, so every kind is on offer
+  DENOMS.forEach(d => {
+    if (!planning && bundles[d] <= 0) return;
+    if (d === u.denom) return;
+    const open = units.find(o => o !== u && o.denom === d && o.count < UNIT_CAP);   // finish a started shelf before opening another
+    const b = document.createElement('button'), n = chooseOpts.length + 1;
+    b.innerHTML = '<span class="chip" style="background:' + COLORS[d] + '"></span><b>' + n + '</b> — ' + dn(d) + ' <small>(' + fmt(bundles[d]) + ' باكو معاك)</small>' +
+      (open ? '<br><small>لسه فيه مكان في رف ' + dn(d) + ' اللي اخترته قبل كده — كمّله الأول</small>' : '');
+    if (open) { b.disabled = true; chooseOpts.push(null); } else { chooseOpts.push(d); b.onclick = () => chooseDenom(d); }
+    list.appendChild(b);
+  });
+  openUi('choose');
+}
+function chooseDenom(d) {
+  const u = chooseUnit; if (!u || (u.denom !== null && u.count > 0)) return;   // a shelf with stock on it can never be relabelled
+  assignUnit(u, d); closeUi(); if (bundles[d] > 0) startShelving(u); sfx.granted(); saveGame();
+  toast('الرف ده بقى بتاع ' + dn(d), true);
+}
+function openUi(which) {
+  state = which; keys.clear();
+  document.exitPointerLock();
+  if (which === 'keypad') { kpEntry = ''; drawKp();
+    $('kpHint').textContent = 'اكتب الباسورد (4 أرقام) · Enter = تمام · Esc = اقفل'; $('kpHint').style.color = ''; $('keypad').classList.remove('hidden'); }
+  else if (which === 'choose') $('chooser').classList.remove('hidden');
+  else if (which === 'shop') $('shop').classList.remove('hidden');
+  else if (OV[which]) $(OV[which]).classList.remove('hidden');
+  else $('noteView').classList.remove('hidden');
+}
+function closeUi() {
+  Object.values(OV).forEach(id => $(id).classList.add('hidden'));
+  $('shop').classList.add('hidden');
+  $('keypad').classList.add('hidden'); $('noteView').classList.add('hidden'); $('chooser').classList.add('hidden');
+  state = 'playing'; lockPointer();
+}
+function drawKp(bad) {
+  const d = $('kpDisplay'); d.textContent = (kpEntry + '____').slice(0, 4); d.classList.toggle('bad', !!bad);
+}
+function kpPress(k) {
+  if (state !== 'keypad') return;
+  if (k === 'C') { kpEntry = ''; beep(300, 0.06, 'square', 0.04); drawKp(); return; }
+  if (k === 'OK') {
+    if (kpEntry === CODE) {
+      door.unlocked = true; knowsCode = true; hudDirty = true; kpLampMat.color.set(0x23d160); wrongStreak = 0;
+      sfx.granted(); sfx.doorMove(2.2);
+      closeUi(); toast('الباسورد صح — الخزنة اتفتحت', true);
+    } else {
+      sfx.wrong(); drawKp(true); wrongTries++;
+      $('kpHint').textContent = 'الباسورد غلط — جرّب تاني (غلطت ' + wrongTries + (wrongTries === 1 ? ' مرة' : ' مرات') + ')';
+      $('kpHint').style.color = '#ff7b7b';
+      if (++wrongStreak >= 3) {                           // three wrong in a row: the alarm goes off and the keypad locks itself for a while
+        wrongStreak = 0; const secs = difficulty === 2 ? 60 : 30;
+        kpLockUntil = elapsed + secs; alarmUntil = elapsed + 8; sirenAt = 0;
+        closeUi(); toast('غلطت 3 مرات — الإنذار ضرب والكيباد اتقفل ' + secs + ' ثانية'); return;
+      }
+      setTimeout(() => { kpEntry = ''; drawKp(); }, 600);
+    }
+    return;
+  }
+  if (kpEntry.length < 4) { kpEntry += k; sfx.key(Number(k)); drawKp(); }
+}
+['1', '2', '3', '4', '5', '6', '7', '8', '9', 'C', '0', 'OK'].forEach(k => {
+  const b = document.createElement('button'); b.textContent = k;
+  if (k === 'OK') b.className = 'ok'; if (k === 'C') b.className = 'clr';
+  b.onclick = () => kpPress(k); $('kpGrid').appendChild(b);
+});
+$('noteView').onclick = closeUi;
+
+// ───────────────────────── Input ─────────────────────────
+const keys = new Set();
+const canvas = $('c');
+function lockPointer() {
+  if (touchMode) { if (state === 'paused' || state === 'menu') state = 'playing'; $('pauseOv').classList.add('hidden'); return; }   // no mouse to capture on a touch screen
+  const p = canvas.requestPointerLock(); if (p && p.catch) p.catch(() => pause()); }
+function pause() { mouseHeld = false; setHum(false); setCounter(false); setCoiner(false); loopSound('alarm', false); saveGame(); if (state === 'playing') { state = 'paused'; keys.clear(); $('pauseOv').classList.remove('hidden'); } }
+document.addEventListener('pointerlockchange', () => {
+  if (document.pointerLockElement === canvas) {
+    if (state === 'paused' || state === 'menu') state = 'playing';
+    $('pauseOv').classList.add('hidden'); $('startOv').classList.add('hidden');
+  } else pause();
+});
+document.addEventListener('pointerlockerror', pause);
+$('pwInput').addEventListener('input', e => { e.target.value = normDigits(e.target.value).replace(/\D/g, '').slice(0, 4); $('pwErr').textContent = ''; });
+$('pwInput').addEventListener('keydown', e => { if (e.key === 'Enter') $('startBtn').click(); });
+$('pwInput').focus();
+$('startBtn').onclick = () => {
+  const pw = $('pwInput').value;
+  if (!/^\d{4}$/.test(pw)) { $('pwErr').textContent = 'اكتب 4 أرقام بالظبط.'; $('pwInput').focus(); return; }
+  CODE = pw; clearSave(); begin();                       // a new game replaces whatever was saved
+};
+function begin() {
+  $('pwInput').blur(); initAudio();
+  $('startOv').classList.add('hidden'); state = 'playing'; scheduleThief(true); hudDirty = true; lockPointer(); saveGame();
+}
+$('contBtn').onclick = () => { const s = readSave(); if (s) { loadGame(s); begin(); } };
+$('diffBtns').querySelectorAll('button').forEach(b => b.onclick = () => {
+  difficulty = +b.dataset.d; $('diffBtns').querySelectorAll('button').forEach(o => o.classList.toggle('on', o === b));
+});
+// ── sound settings (reachable from the start screen and from the pause screen)
+let sndPick = '';
+function drawSounds() {
+  const list = $('sndList'); if (!list) return; list.innerHTML = '';
+  SND_INFO.forEach(([k, label]) => {
+    const s = SND[k], row = document.createElement('div'); row.className = 'row';
+    row.innerHTML = '<div><b>' + label + '</b><small>' + (s.el ? 'ملفك: ' + s.name.replace(/[<>&]/g, '') : 'صوت الكمبيوتر') + '</small></div>';
+    const btns = document.createElement('div');
+    const mk = (text, cls, fn) => { const b = document.createElement('button'); b.textContent = text; b.className = cls; b.onclick = fn; btns.appendChild(b); };
+    mk('اختار ملف', '', () => { sndPick = k; $('sndFile').click(); });
+    mk('جرّب', 'plain', () => previewSound(k));
+    if (s.el) mk('رجّع الأصلي', 'plain', () => setSound(k, null));
+    row.appendChild(btns); list.appendChild(row);
+  });
+}
+function previewSound(k) {
+  initAudio();
+  const fn = { sorter: setCounter, coins: setCoiner, bander: setHum }[k];
+  if (fn) { fn(true); setTimeout(() => fn(false), 2500); }
+  else if (k === 'alarm') { if (loopSound('alarm', true)) setTimeout(() => loopSound('alarm', false), 3000); else sfx.siren(); }
+  else if (k === 'win') sfx.win();
+  else { if (!musicOn) toggleMusic(); musicTick(); }
+}
+$('sndFile').addEventListener('change', e => { const f = e.target.files[0]; if (f && sndPick) setSound(sndPick, f, f.name); e.target.value = ''; });
+const openSounds = e => { e.stopPropagation(); drawSounds(); $('soundOv').classList.remove('hidden'); };
+$('sndBtn1').onclick = openSounds; $('sndBtn2').onclick = openSounds;
+$('sndClose').onclick = () => $('soundOv').classList.add('hidden');
+addEventListener('beforeunload', saveGame);
+// ── records
+function readRecords() { try { return JSON.parse(localStorage.getItem(REC_KEY)) || {}; } catch (e) { return {}; } }
+// ── the store: things bought with real money are delivered as a code, typed in here
+function drawStore() {
+  $('storePay').textContent = STORE.payText || 'الدفع لسه متوصّلش: صاحب اللعبة لازم يكتب طريقة الدفع في ملف store.js.';
+  const list = $('storeList'); list.innerHTML = '';
+  STORE.products.forEach(p => {
+    const row = document.createElement('div'); row.className = 'row';
+    row.innerHTML = '<div><b>' + p.name + '</b><small>' + p.desc + '</small></div>';
+    const b = document.createElement('button'); b.textContent = p.soon ? 'قريب' : 'اشتري بـ' + p.price + ' جنيه'; b.disabled = !!p.soon;
+    b.onclick = () => {
+      if (window.VaultBilling && window.VaultBilling.buy) {   // integration point: the Android app supplies this (Google Play Billing)
+        if (!CODE || state === 'menu' || state === 'won') return;
+        return window.VaultBilling.buy(p.id, ok => { if (ok) { grant(p); $('codeMsg').style.color = '#5dfc9a'; $('codeMsg').textContent = 'تمام! اتفعّل: ' + p.name; } });
+      }
+      if (STORE.payUrl) window.open(STORE.payUrl + (STORE.payUrl.includes('?') ? '&' : '?') + 'product=' + p.id, '_blank');
+      $('codeMsg').style.color = '#e9c46a'; $('codeMsg').textContent = 'بعد الدفع هيوصلك كود «' + p.name + '» — اكتبه هنا ودوس فعّل.';
+    };
+    row.appendChild(b); list.appendChild(row);
+  });
+}
+function grant(p) {                                     // hand over what a product gives (after a code, or a confirmed store purchase)
+  if (p.give.bonus) bonus += p.give.bonus;
+  Object.keys(p.give.up || {}).forEach(k => { up[k] = Math.max(up[k], p.give.up[k]); });
+  applyUpgrades(); drawShop(); updateHud(); saveGame(); sfx.granted();
+}
+function redeem(code) {
+  const m = $('codeMsg'), say = (t, ok) => { m.textContent = t; m.style.color = ok ? '#5dfc9a' : '#ff7b7b'; return !!ok; };
+  if (!CODE || state === 'menu' || state === 'won') return say('ابدأ اللعبة الأول، وبعدين فعّل الكود من شاشة الوقفة.');
+  const h = codeHash(String(code).toUpperCase().replace(/[^A-Z0-9]/g, '')), p = STORE.products.find(p => p.id === STORE.codes[h]);
+  if (!p) { sfx.wrong(); return say('الكود ده مش صح.'); }
+  let used = []; try { used = JSON.parse(localStorage.getItem(USED_KEY)) || []; } catch (e) {}
+  if (used.includes(h)) { sfx.wrong(); return say('الكود ده اتستعمل قبل كده.'); }
+  used.push(h); try { localStorage.setItem(USED_KEY, JSON.stringify(used)); } catch (e) {}
+  grant(p); $('codeInput').value = '';
+  return say('تمام! اتفعّل: ' + p.name, true);
+}
+const openStore = e => { e.stopPropagation(); drawStore(); $('codeMsg').textContent = ''; $('storeOv').classList.remove('hidden'); };
+$('storeBtn2').onclick = openStore; $('storeBtn3').onclick = openStore;
+$('storeClose').onclick = () => $('storeOv').classList.add('hidden');
+$('codeBtn').onclick = () => redeem($('codeInput').value);
+$('shopClose').onclick = () => { if (state === 'shop') closeUi(); };
+// ── touch controls: stick to walk, drag to look, buttons to pick / use / run / pause
+function enableTouch() {
+  if (touchMode) return;
+  touchMode = true; document.body.classList.add('touch'); renderer.setPixelRatio(Math.min(devicePixelRatio, 1.5)); resize();
+}
+addEventListener('pointerdown', e => { if (e.pointerType === 'touch') enableTouch(); }, true);
+document.addEventListener('visibilitychange', () => { if (document.hidden && touchMode) pause(); });
+(() => {
+  const stick = $('stick'), knob = $('knob'), cap = (el, e) => { try { el.setPointerCapture(e.pointerId); } catch (_) {} };
+  let stickId = null, lookId = null, lookX = 0, lookY = 0;
+  const stickMove = e => {
+    const r = stick.getBoundingClientRect(), x = (e.clientX - r.left - r.width / 2) / (r.width / 2), y = (e.clientY - r.top - r.height / 2) / (r.height / 2), l = Math.max(1, Math.hypot(x, y));
+    stickX = x / l; stickY = y / l; knob.style.transform = 'translate(' + stickX * 36 + 'px,' + stickY * 36 + 'px)';
+  };
+  const stickEnd = e => { if (e.pointerId === stickId) { stickId = null; stickX = stickY = 0; knob.style.transform = ''; } };
+  stick.addEventListener('pointerdown', e => { stickId = e.pointerId; cap(stick, e); stickMove(e); e.preventDefault(); });
+  stick.addEventListener('pointermove', e => { if (e.pointerId === stickId) stickMove(e); });
+  stick.addEventListener('pointerup', stickEnd); stick.addEventListener('pointercancel', stickEnd);
+  canvas.addEventListener('pointerdown', e => { if (!touchMode || state !== 'playing') return; lookId = e.pointerId; lookX = e.clientX; lookY = e.clientY; cap(canvas, e); });
+  canvas.addEventListener('pointermove', e => {
+    if (e.pointerId !== lookId || state !== 'playing') return;
+    player.yaw -= (e.clientX - lookX) * 0.005; player.pitch = Math.max(-1.45, Math.min(1.45, player.pitch - (e.clientY - lookY) * 0.005));
+    lookX = e.clientX; lookY = e.clientY;
+  });
+  const lookEnd = e => { if (e.pointerId === lookId) lookId = null; };
+  canvas.addEventListener('pointerup', lookEnd); canvas.addEventListener('pointercancel', lookEnd);
+  const pick = $('tPick'), stop = () => { mouseHeld = false; };
+  pick.addEventListener('pointerdown', e => { if (state !== 'playing') return; cap(pick, e); mouseHeld = true; pickAcc = 0; holdAcc = 1; e.preventDefault(); });
+  pick.addEventListener('pointerup', stop); pick.addEventListener('pointercancel', stop);
+  $('tUse').addEventListener('pointerdown', e => { if (state === 'playing') interact(); e.preventDefault(); });
+  $('tRun').addEventListener('pointerdown', e => { runOn = !runOn; $('tRun').classList.toggle('on', runOn); e.preventDefault(); });
+  $('tPause').addEventListener('pointerdown', e => { pause(); e.preventDefault(); });
+})();
+$('pauseOv').onclick = () => { $('pauseOv').classList.add('hidden'); state = 'playing'; lockPointer(); };
+canvas.addEventListener('click', () => { if (state === 'playing' && document.pointerLockElement !== canvas) lockPointer(); });
+document.addEventListener('mousemove', e => {
+  if (state !== 'playing' || document.pointerLockElement !== canvas) return;
+  player.yaw -= e.movementX * 0.0022;
+  player.pitch = Math.max(-1.45, Math.min(1.45, player.pitch - e.movementY * 0.0022));
+});
+document.addEventListener('keydown', e => {
+  if (!$('storeOv').classList.contains('hidden')) return;      // typing a purchase code
+  if (state === 'keypad') {
+    const dk = normDigits(e.key);
+    if (/^[0-9]$/.test(dk)) kpPress(dk);
+    else if (e.key === 'Enter') kpPress('OK');
+    else if (e.key === 'Backspace') { kpEntry = kpEntry.slice(0, -1); drawKp(); }
+    else if (e.key === 'Escape') closeUi();
+    e.preventDefault(); return;
+  }
+  if (state === 'choose') {
+    const dk = normDigits(e.key);
+    if (/^[1-9]$/.test(dk)) { const d = chooseOpts[dk - 1]; if (d) chooseDenom(d); }
+    else if (e.key === 'Escape') closeUi();
+    e.preventDefault(); return;
+  }
+  if (OV[state]) {
+    if (e.key === 'Escape') { countTray = 0; if (order) order.counted = 0; closeUi(); }
+    else if (state === 'order' && e.code === 'Space' && !e.repeat) flickOne();
+    e.preventDefault(); return;
+  }
+  if (state === 'shop') {
+    const dk = normDigits(e.key);
+    if (/^[1-9]$/.test(dk)) buy(dk - 1);
+    else if (e.key === 'Escape' || (e.code === 'KeyE' && !e.repeat)) closeUi();
+    e.preventDefault(); return;
+  }
+  if (state === 'note') { if (!e.repeat && (e.code === 'KeyE' || e.key === 'Escape' || e.key === 'Enter')) closeUi(); return; }
+  if (state !== 'playing') return;
+  keys.add(e.code);
+  if (e.code === 'KeyE' && !e.repeat) interact();
+  if (e.code === 'KeyM' && !e.repeat) toggleMute();
+  if (e.code === 'KeyN' && !e.repeat) toggleMusic();
+});
+document.addEventListener('keyup', e => keys.delete(e.code));
+addEventListener('blur', () => { keys.clear(); mouseHeld = false; });
+document.addEventListener('mousedown', e => {
+  if (e.button !== 0 || state !== 'playing' || document.pointerLockElement !== canvas) return;
+  mouseHeld = true; pickAcc = 0; holdAcc = 1;
+});
+document.addEventListener('mouseup', e => { if (e.button === 0) mouseHeld = false; });
+
+// ───────────────────────── Simulation ─────────────────────────
+function walkable(x, z) {
+  const r = 0.35;
+  let ok = false;
+  if (Math.abs(x) <= hw - r && z <= hd - r && z >= -hd + r) ok = true;
+  else if (Math.abs(x) <= VAULT.hw - r && z <= VAULT.z0 - r && z >= VAULT.z1 + r) ok = true;
+  else if (door.passable && Math.abs(x) <= 1.2 - r && z < -hd + r && z > VAULT.z0 - r) ok = true;
+  if (!ok) return false;
+  for (const o of obstacles) if (x > o.x0 - r && x < o.x1 + r && z > o.z0 - r && z < o.z1 + r) return false;
+  return !pileBlocks(x, z) && !coinBlocks(x, z);
+}
+function win() {
+  finished = true; saveGame(); state = 'won'; document.exitPointerLock();   // the finished vault stays saved: the orders office stays open after victory
+  setHum(false); setCounter(false); setCoiner(false); loopSound('alarm', false); $('alert').style.display = 'none'; $('redFlash').style.display = 'none';
+  const secured = value(shelved) * NOTES_PER_BUNDLE, st = value(stolen), leftN = sum(hopper), leftV = value(hopper), stars = st === 0 ? 3 : st < 500000 ? 2 : 1;
+  const recs = readRecords(), old = recs[difficulty], better = !old || stars > old.stars || (stars === old.stars && elapsed < old.time);
+  if (better) { recs[difficulty] = { stars, time: Math.round(elapsed), secured }; try { localStorage.setItem(REC_KEY, JSON.stringify(recs)); } catch (e) {} }
+  $('winRecord').textContent = better ? 'رقم قياسي جديد على المستوى ده!' : 'أحسن نتيجة ليك: ' + '★'.repeat(old.stars) + ' في ' + mmss(old.time);
+  $('winTitle').textContent = st ? 'الخزنة اتقفلت — بس الحرامي خد نصيبه' : 'الخزنة اتأمّنت!';
+  $('winLine').innerHTML = st
+    ? 'اتأمّن <b>' + fmt(secured) + ' جنيه</b> من 100,000,000. الحرامي هرب بـ<b>' + fmt(st) + ' جنيه</b>.' +
+      (leftN ? ' وفاضل ' + fmt(leftN) + ' ورقة (' + fmt(leftV) + ' جنيه) مكمّلوش باكو.' : '')
+    : 'كل الـ<b>100,000,000 جنيه</b> اتحزّموا واترصّوا على الرفوف.';
+  $('winLine2').innerHTML = fmt(sum(shelved)) + ' باكو ولفّة · الوقت <b>' + mmss(elapsed) + '</b> · ' + '★'.repeat(stars) + '☆'.repeat(3 - stars) +
+    (thievesCaught ? ' · مسكت الحرامي ' + thievesCaught + (thievesCaught === 1 ? ' مرة' : ' مرات') : '');
+  $('winOv').classList.remove('hidden');
+  sfx.win();
+}
+function update(dt) {
+  elapsed += dt;
+
+  // movement
+  let f = 0, s = 0;
+  if (keys.has('KeyW') || keys.has('ArrowUp')) f += 1;
+  if (keys.has('KeyS') || keys.has('ArrowDown')) f -= 1;
+  if (keys.has('KeyD') || keys.has('ArrowRight')) s += 1;
+  if (keys.has('KeyA') || keys.has('ArrowLeft')) s -= 1;
+  f -= stickY; s += stickX;                             // on-screen stick (phones and tablets)
+  if (f || s) {
+    const len = Math.max(1, Math.hypot(f, s)), sp = (keys.has('ShiftLeft') || keys.has('ShiftRight') || runOn ? 8.5 : 5) * dt / len;
+    const sin = Math.sin(player.yaw), cos = Math.cos(player.yaw);
+    const dx = (-sin * f + cos * s) * sp, dz = (-cos * f - sin * s) * sp;
+    const px = player.x, pz = player.z;
+    if (walkable(player.x + dx, player.z)) player.x += dx;
+    if (walkable(player.x, player.z + dz)) player.z += dz;
+    stepAcc += Math.hypot(player.x - px, player.z - pz);
+    if (stepAcc > 0.8) { stepAcc = 0; stepFoot ^= 1; sfx.step(stepFoot); }
+  }
+
+  // collect piles
+  // manual pick-up: click (or hold) the mouse on the bill under the crosshair
+  if (mouseHeld) {
+    const hit = findAimedAny();
+    if (hit && !hit.coin && hit.gold < 0) {             // notes: one sheet after another, as fast as your hands have become
+      holdAcc = Math.min(holdAcc + dt * pickRate(), 200);
+      while (holdAcc >= 1) { holdAcc -= 1; if (!tryPick(true)) { holdAcc = 0; break; } }
+    } else { pickAcc -= dt; if (pickAcc <= 0) { tryPick(); pickAcc = 0.09; holdAcc = 0; } }
+  }
+  refreshAim();
+
+  const it = findInteract();
+
+  // sort & count machine: feeds the mixed notes one bill at a time, separates them, counts to 100
+  if (sorting) {
+    if (!it || it.type !== 'machine') sorting = false;
+    else {
+      sortAcc += dt * sortRate;
+      let newStack = false;
+      while (sortAcc >= 1 && sorting) {
+        sortAcc -= 1;
+        const avail = DENOMS.filter(d => loose[d] > 0);
+        if (!avail.length) {
+          sorting = false; sfx.counted();
+          if (fakesInBag) { const n = fakesInBag; fakesInBag = 0; fakesCaught += n; bonus += n * FAKE_BONUS; toast('العد خلص — والماكينة كشفت ' + n + ' ورقة مزوّرة: مكافأة ' + fmt(n * FAKE_BONUS) + ' حوافز', true); }
+          else toast('العد خلص — خُد الرزم', true);
+          break;
+        }
+        const d = avail[Math.floor(Math.random() * avail.length)];
+        const n = Math.min(SORT_CHUNK, loose[d]); loose[d] -= n; hopper[d] += n;
+        while (hopper[d] >= NOTES_PER_BUNDLE) { hopper[d] -= NOTES_PER_BUNDLE; tray[d]++; newStack = true; }
+      }
+      if (newStack) { drawTray(); sfx.stack(); }
+      drawDisplay(); hudDirty = true;
+    }
+  }
+  machineLamp.material.color.set(sorting && Math.floor(elapsed * 10) % 2 ? 0xffd43b : 0x23d160);
+
+  // label & band machine: wraps every counted stack you carry
+  const wasPacking = packing;
+  if (packing) {
+    if (!it || it.type !== 'packer') packing = false;
+    else {
+      packAcc += dt * packRate;
+      while (packAcc >= 1 && packing) {
+        packAcc -= 1;
+        const d = DENOMS.find(d => d !== 1 && stacks[d] > 0);
+        if (!d) { packing = false; sfx.done(); break; }
+        stacks[d]--; bundles[d]++; hudDirty = true; outAdd(packOut, d);
+        sfx.band();
+      }
+    }
+  }
+  if (wasPacking && !packing) { packOut.clearAt = elapsed + 1.5; if (packOut.made) toast(packOut.made +' باكو اتحزّموا — بقوا في شنطتك', true); }
+  if (!packing && packOut.total && elapsed > packOut.clearAt) outClear(packOut);
+  // coin machine: counts the loose coins out of your pouch and wraps every 100 into a paper roll
+  const wasCoining = coining;
+  if (coining) {
+    if (!it || it.type !== 'coiner') coining = false;
+    else {
+      coinAcc += dt * coinRate;
+      while (coinAcc >= 1 && coining) {
+        coinAcc -= 1;
+        if (coinPouch === 0) { coining = false; sfx.done(); break; }
+        if (hopper[1] === NOTES_PER_BUNDLE - 1 && carried() >= carryCap()) { coining = false; toast('إيدك مليانة — ودّي اللي معاك الأول'); break; }
+        coinPouch--; hopper[1]++; hudDirty = true;
+        if (hopper[1] >= NOTES_PER_BUNDLE) { hopper[1] = 0; bundles[1]++; outAdd(coinOut, 1); sfx.rolled(); }
+      }
+      sfx.coin();
+    }
+  }
+  coinStackMesh.visible = hopper[1] > 0; coinStackMesh.scale.y = Math.max(0.12, hopper[1] / 100);
+  coinStackMesh.position.y = 0.96 + 0.088 * coinStackMesh.scale.y;
+  if (wasCoining && !coining) { coinOut.clearAt = elapsed + 1.5; if (coinOut.made) toast(coinOut.made + ' لفّة عملة جاهزة — بقوا في شنطتك', true); }
+  if (!coining && coinOut.total && elapsed > coinOut.clearAt) outClear(coinOut);
+  coinerLamp.material.color.set(coining && Math.floor(elapsed * 10) % 2 ? 0xffd43b : 0x23d160);
+  setHum(packing); setCounter(sorting); setCoiner(coining);
+  packerLamp.material.color.set(packing && Math.floor(elapsed * 10) % 2 ? 0xffd43b : 0x23d160);
+
+  // shelving
+  if (shelving) {
+    if (!it || it.type !== 'shelf' || it.unit !== shelving) shelving = null;
+    else {
+      shelfAcc += dt * shelfRate;
+      while (shelfAcc >= 1 && shelving) {
+        shelfAcc -= 1;
+        const u = shelving, d = u.denom;
+        if (bundles[d] === 0 || u.count >= UNIT_CAP) { shelving = null; break; }
+        bundles[d]--; shelved[d]++; u.count++; u.inst.count = u.count; hudDirty = true;
+        bonus += d === 1 ? 1 : d / 10;                    // your incentive pay: a thousandth of everything you shelve
+        while (shift < SHIFTS.length && value(shelved) * NOTES_PER_BUNDLE >= SHIFTS[shift]) {
+          bonus += SHIFT_BONUS; shift++;
+          const sb = $('shiftBanner');
+          sb.innerHTML = 'الوردية <b>' + shift + '</b> خلصت في <b>' + mmss(elapsed - shiftStart) + '</b> — مكافأة <b>' + SHIFT_BONUS + '</b> حوافز. اللعبة اتحفظت.' + (shift < SHIFTS.length ? '<br>الوردية الجاية: وصّل الخزنة لـ<b>' + fmt(SHIFTS[shift]) + '</b> جنيه' : '');
+          sb.style.opacity = 1; clearTimeout(shiftTimer); shiftTimer = setTimeout(() => sb.style.opacity = 0, 6000);
+          shiftStart = elapsed; saveGame();
+        }
+        while (stage < STAGES.length && value(shelved) * NOTES_PER_BUNDLE >= STAGES[stage][0]) {
+          bonus += STAGES[stage][1]; stage++; sfx.done(); toast('المرحلة ' + stage + ' خلصت! مكافأة ' + fmt(STAGES[stage - 1][1]) + ' حوافز', true);
+        }
+        sfx.shelf();
+      }
+    }
+  }
+
+  // phase 2: the people in the room, the belt, the alarm, autosave
+  updateThief(dt); updateWorker(dt); updateFlies(dt); updateCart();
+  if (up.belt) beltBoxes.forEach((b, i) => { b.position.x = MACHINE.x - 1 - ((elapsed * 2.2 + i * 5) % 30); });
+  if (up.belt) {                                        // counted stacks ride the belt to the banding machine and come out as bundles
+    const n = sum(tray) - tray[1];
+    if (n > 0) {
+      beltAcc += dt * Math.max(6, n / 8); let moved = false;
+      while (beltAcc >= 1) { const d = NOTE_DENOMS.find(d => tray[d] > 0); if (!d) { beltAcc = 0; break; } beltAcc -= 1; tray[d]--; ready[d]++; moved = true; }
+      if (moved) { drawTray(); drawReady(); hudDirty = true; if (Math.hypot(player.x - PACKER.x, player.z - PACKER.z) < 10) sfx.band(); }
+    }
+  }
+  const lockAlarm = elapsed < alarmUntil, danger = lockAlarm || thiefActive(), al = $('alert');
+  $('redFlash').style.display = lockAlarm ? 'block' : 'none';
+  if (thiefActive()) { al.textContent = thiefAlertText(); al.style.display = 'block'; } else if (lockAlarm) { al.textContent = 'إنذار! الباسورد اتكتب غلط 3 مرات'; al.style.display = 'block'; } else al.style.display = 'none';
+  if (!loopSound('alarm', danger) && danger && elapsed >= sirenAt) { sfx.siren(); sirenAt = elapsed + (lockAlarm ? 0.7 : 1.6); }
+  if (elapsed - lastSave > 5) { lastSave = elapsed; saveGame(); }
+  if (!finished && allDone()) { updateHud(); win(); return; }
+
+  // door animation
+  // the safe room locks itself again once you have left it (or walked away without going in)
+  if (door.unlocked) {
+    if (player.z < -hd - 0.5) door.wasInside = true;
+    else if (player.z > -hd + 2 && (door.wasInside || Math.hypot(player.x, player.z + hd) > 8)) {
+      door.unlocked = false; door.wasInside = false; kpLampMat.color.set(0xff3b3b); hudDirty = true;
+      sfx.doorMove(1.2); toast('الخزنة اتقفلت تاني — هتحتاج الباسورد المرة الجاية');
+    }
+  }
+  const target = door.unlocked ? -1.95 : 0;
+  if (door.angle !== target) {
+    const step = dt * (door.unlocked ? 0.9 : 1.6), diff = target - door.angle;
+    door.angle += Math.sign(diff) * Math.min(Math.abs(diff), step);
+    if (door.angle === target) sfx.clunk();
+    doorPivot.rotation.y = door.angle; wheel.rotation.z = door.angle * 3;
+    door.passable = door.angle < -1.4;
+  }
+
+  const pr = $('prompt');
+  let txt = promptFor(it) || aimPrompt();
+  if (touchMode && txt) txt = txt.replace('<kbd>E</kbd>', '<kbd>✋</kbd>').replace('<kbd>كليك</kbd>', '<kbd>لِمّ</kbd>');
+  if (txt) { if (pr.innerHTML !== txt) pr.innerHTML = txt; pr.style.display = 'block'; } else pr.style.display = 'none';
+  $('timer').textContent = mmss(elapsed);
+  if (hudDirty) updateHud();
+}
+
+// ───────────────────────── Loop ─────────────────────────
+let last = performance.now(), perfT = 0, perfN = 0, perfDone = false;
+function frame(now) {
+  const raw = (now - last) / 1000, dt = Math.min(0.05, raw); last = now;
+  if (state === 'playing' && !perfDone) {                 // slow machine or phone: give up the shadows and some sharpness to keep the game smooth
+    perfT += raw; perfN++;
+    if (perfT > 4) { perfDone = true; if (perfN / perfT < 24) { sun.castShadow = false; renderer.setPixelRatio(Math.min(devicePixelRatio, 1.25)); resize(); } }
+  }
+  if (order && (state === 'playing' || OV[state])) { order.time += Math.min(raw, 0.25); if (state === 'order') $('ordTitle').textContent = ordTitle(); }
+  if (state === 'playing') update(dt);
+  else { $('prompt').style.display = 'none'; aimMesh.visible = false; }
+  camera.position.set(player.x, 1.7, player.z);
+  camera.rotation.y = player.yaw; camera.rotation.x = player.pitch;
+  renderer.render(scene, camera);
+  requestAnimationFrame(frame);
+}
+// ── start-up: offer the saved game, bring back the player's own sound files
+$('musState').textContent = musicOn ? 'شغّالة' : 'مقفولة';
+(() => {                                                // best results so far, one line per difficulty
+  const recs = readRecords(), lines = [];
+  ['هادي', 'عادي', 'صعب'].forEach((n, i) => { const r = recs[i]; if (r) lines.push(n + ': ' + '★'.repeat(r.stars) + '☆'.repeat(3 - r.stars) + ' في ' + mmss(r.time)); });
+  if (lines.length) { $('recBox').classList.remove('hidden'); $('recBox').innerHTML = '<b style="color:var(--gold)">أحسن نتايجك</b> — ' + lines.join(' · '); }
+})();
+scene.traverse(o => {                                   // who throws a shadow: people, machines, pillars, furniture and the heap itself
+  if (!o.isMesh) return;
+  if (o.isInstancedMesh) { if (o === coreInst) { o.castShadow = true; o.receiveShadow = true; } return; }
+  const p = o.geometry.parameters || {}, big = Math.max(p.width || 0, p.depth || 0, p.height || 0) > 12;
+  o.receiveShadow = true; if (!big && o.geometry.type !== 'PlaneGeometry') o.castShadow = true;
+});
+(() => {
+  const s = readSave(); if (!s) return;
+  $('contBox').classList.remove('hidden');
+  if (s.finished) $('contBtn').textContent = 'ارجع لخزنتك ومكتب الطلبيات';
+  $('contInfo').innerHTML = (s.finished ? 'خزنتك اللي خلّصتها: <b>' : 'فيه لعبة محفوظة: <b>') + fmt(value(s.shelved) * NOTES_PER_BUNDLE) + ' جنيه</b> في الخزنة · الوقت ' + mmss(s.elapsed) + ' · المستوى ' + ['هادي', 'عادي', 'صعب'][s.difficulty];
+  $('pwLabel').textContent = 'أو ابدأ لعبة جديدة (المحفوظة هتتمسح) — اختار باسورد الخزنة (4 أرقام)';
+})();
+try {
+  const rq = indexedDB.open('moneyVaultSounds', 1);
+  rq.onupgradeneeded = () => rq.result.createObjectStore('s');
+  rq.onsuccess = () => {
+    sndDb = rq.result;
+    SND_INFO.forEach(([k]) => { const g = sndDb.transaction('s').objectStore('s').get(k); g.onsuccess = () => { if (g.result) setSound(k, g.result.file, g.result.name, false); }; });
+  };
+} catch (e) {}
+if (location.protocol === 'https:' || location.protocol === 'http:') {   // on a real website: installable, and playable offline after the first visit
+  const ml = document.createElement('link'); ml.rel = 'manifest'; ml.href = 'manifest.webmanifest'; document.head.appendChild(ml);
+  if ('serviceWorker' in navigator && location.protocol === 'https:') navigator.serviceWorker.register('sw.js').catch(() => {});
+}
+updateHud();
+requestAnimationFrame(frame);
+
+// small debug handle (console): game.code, game.player
+window.game = { get code() { return CODE; }, player, loose, hopper, tray, stacks, bundles, shelved, door, update, pick: () => tryPick(), hold(on) { mouseHeld = !!on; if (on) holdAcc = 1; }, coins: { cpCount, cpX, cpZ, CN, t: CP.t }, get coinPouch() { return coinPouch; }, units, pile: { pcCoin, colCount, colX, colZ, colAt, NCOL, t: PILE.t }, get state() { return state; }, set state(v) { state = v; },
+  up, stolen, ready, buy, thief, worker, guard, spawnThief, saveGame, readSave, loadGame, clearSave, SND, setSound, allDone,
+  get bonus() { return bonus; }, set bonus(v) { bonus = v; hudDirty = true; },
+  get difficulty() { return difficulty; }, set difficulty(v) { difficulty = v; },
+  get nextThief() { return nextThief; }, set nextThief(v) { nextThief = v; },
+  gold, STAGES, STORE, codeHash, redeem, enableTouch, takeGold, readRecords,
+  SHIFTS, cart, grant, get shift() { return shift; },
+  ORDERS, KINDS, openOffice, buildOrder, handCap, decor, weekId, get finished() { return finished; }, get pending() { return pending; }, set quiet(v) { quietShift = v; }, startOrder, grabNote, dropInTray, openCount, flickOne, bandCounted, unband, deliverPack, drawOrder,
+  get order() { return order; }, get ordersDone() { return ordersDone; }, get countTray() { return countTray; },
+  get stage() { return stage; }, set stage(v) { stage = v; hudDirty = true; }, get goldFound() { return goldFound; }, get fakesCaught() { return fakesCaught; }, get fakesInBag() { return fakesInBag; }, set fakesInBag(v) { fakesInBag = v; },
+  get touchMode() { return touchMode; }, get stick() { return [stickX, stickY]; }, get runOn() { return runOn; },
+  get elapsed() { return elapsed; }, get kpLockUntil() { return kpLockUntil; }, get musicOn() { return musicOn; }, get pilesLeft() { return pilesLeft; } };
+})();
+</script>
+</body>
+</html>
